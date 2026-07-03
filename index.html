@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ömer Tepe</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Sans:ital,wght@0,400;0,450;0,500;0,600;1,400&display=swap" rel="stylesheet">
+  <style>
+    :root { color-scheme: light dark; }
+    html, body { margin: 0; padding: 0; }
+    body { background: light-dark(#fcfcfa, #141413); }
+    ::selection { background: light-dark(#1a1a18, #e9e9e4); color: light-dark(#fcfcfa, #141413); }
+    a { color: inherit; }
+
+    .page {
+      min-height: 100vh;
+      background: light-dark(#fcfcfa, #141413);
+      color: light-dark(#1c1c1a, #e6e6e1);
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 15px;
+      line-height: 1.6;
+      font-weight: 450;
+    }
+    .container {
+      max-width: 660px;
+      margin: 0 auto;
+      padding: 72px 24px 64px 24px;
+      box-sizing: border-box;
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .header-left { display: flex; flex-direction: column; gap: 2px; }
+    .header-left h1 {
+      margin: 0;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 19px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+    .tagline {
+      margin: 0;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12.5px;
+      color: light-dark(#71716a, #93938b);
+    }
+    .toggles {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 6px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11.5px;
+      padding-top: 4px;
+    }
+    .toggle-row { display: flex; align-items: center; gap: 10px; }
+    .toggle-row button {
+      all: unset;
+      cursor: pointer;
+      padding: 2px 0;
+      border-bottom: 1px solid transparent;
+      color: light-dark(#a3a39b, #6b6b64);
+    }
+    .toggle-row button:hover { color: light-dark(#1c1c1a, #e6e6e1); }
+    .toggle-row button:focus-visible { outline: 1px dotted currentColor; outline-offset: 2px; }
+    .toggle-row button.active {
+      color: light-dark(#1c1c1a, #e6e6e1);
+      border-bottom-color: light-dark(#1c1c1a, #e6e6e1);
+    }
+
+    /* Sections */
+    .section-h {
+      margin: 0 0 14px 0;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: light-dark(#8a8a82, #7d7d76);
+    }
+
+    /* About */
+    .about { margin-top: 56px; }
+    .about p { margin: 0 0 12px 0; text-wrap: pretty; }
+    .about p:last-child { margin-bottom: 0; }
+    .body-link {
+      color: inherit;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      text-decoration-color: light-dark(#c4c4bc, #4a4a45);
+    }
+    .body-link:hover { text-decoration-color: light-dark(#1c1c1a, #e6e6e1); }
+
+    /* Projects */
+    .projects { margin-top: 52px; }
+    .projects-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 0 0 6px 0;
+    }
+    .projects-head .section-h { margin: 0; }
+    .gh-link {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11.5px;
+      color: light-dark(#8a8a82, #7d7d76);
+      text-decoration: none;
+    }
+    .gh-link:hover { color: light-dark(#1c1c1a, #e6e6e1); }
+    .repos-loading {
+      margin: 0;
+      padding: 20px 0;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12.5px;
+      color: light-dark(#8a8a82, #7d7d76);
+    }
+    .repo-list { display: flex; flex-direction: column; }
+    .repo-row {
+      display: block;
+      text-decoration: none;
+      color: inherit;
+      padding: 18px 0;
+      border-top: 1px solid light-dark(#e7e7e1, #2a2a27);
+    }
+    .repo-row:hover { background: light-dark(#f5f5f1, #1b1b19); }
+    .repo-line1 {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .repo-name {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .repo-meta {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11.5px;
+      color: light-dark(#8a8a82, #7d7d76);
+      white-space: nowrap;
+    }
+    .repo-desc {
+      margin: 6px 0 0 0;
+      font-size: 14px;
+      color: light-dark(#55554f, #b0b0a8);
+      text-wrap: pretty;
+      max-width: 54ch;
+    }
+    .repo-list-end { border-top: 1px solid light-dark(#e7e7e1, #2a2a27); }
+    .repos-error {
+      margin: 10px 0 0 0;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11.5px;
+      color: light-dark(#8a8a82, #7d7d76);
+    }
+    .repos-error a { color: inherit; }
+
+    /* Contact */
+    .contact { margin-top: 52px; }
+    .contact-rows {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 13px;
+    }
+    .contact-row { display: flex; gap: 16px; }
+    .contact-label {
+      color: light-dark(#8a8a82, #7d7d76);
+      width: 72px;
+      flex-shrink: 0;
+    }
+
+    /* Footer */
+    footer {
+      margin-top: 72px;
+      padding-top: 20px;
+      border-top: 1px solid light-dark(#e7e7e1, #2a2a27);
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: light-dark(#a3a39b, #6b6b64);
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+  <div class="container">
+
+    <header>
+      <div class="header-left">
+        <h1>Mehmet Ömer Tepe</h1>
+        <p class="tagline" id="tagline">EEE student · computer vision · Istanbul, TR</p>
+      </div>
+      <div class="toggles">
+        <div class="toggle-row" aria-label="Language">
+          <button id="lang-en" title="English">en</button>
+          <button id="lang-tr" title="Türkçe">tr</button>
+        </div>
+        <div class="toggle-row" aria-label="Color theme">
+          <button id="theme-system" title="Follow system theme">system</button>
+          <button id="theme-light" title="Light theme">light</button>
+          <button id="theme-dark" title="Dark theme">dark</button>
+        </div>
+      </div>
+    </header>
+
+    <section class="about">
+      <h2 class="section-h" id="about-h">About</h2>
+      <p id="about-p1"></p>
+      <p><span id="about-p2a"></span><a class="body-link" href="https://github.com/MOmerTepe/openteslacam" target="_blank" rel="noopener">openteslacam</a><span id="about-p2b"></span></p>
+      <p id="about-p3"></p>
+    </section>
+
+    <section class="projects">
+      <div class="projects-head">
+        <h2 class="section-h" id="projects-h">Projects</h2>
+        <a class="gh-link" href="https://github.com/MOmerTepe?tab=repositories" target="_blank" rel="noopener">github.com/MOmerTepe ↗</a>
+      </div>
+      <p class="repos-loading" id="repos-loading">fetching repositories…</p>
+      <div class="repo-list" id="repo-list" hidden></div>
+      <p class="repos-error" id="repos-error" hidden><span id="repos-error-text"></span> <a href="https://github.com/MOmerTepe?tab=repositories" target="_blank" rel="noopener" id="repos-error-link"></a></p>
+    </section>
+
+    <section class="contact">
+      <h2 class="section-h" id="contact-h">Contact</h2>
+      <div class="contact-rows">
+        <div class="contact-row">
+          <span class="contact-label" id="email-label">email</span>
+          <a class="body-link" href="mailto:work@omertepe.com">work@omertepe.com</a>
+        </div>
+        <div class="contact-row">
+          <span class="contact-label">github</span>
+          <a class="body-link" href="https://github.com/MOmerTepe" target="_blank" rel="noopener">MOmerTepe</a>
+        </div>
+        <div class="contact-row">
+          <span class="contact-label">linkedin</span>
+          <a class="body-link" href="https://www.linkedin.com/in/mehmet-%C3%B6mer-tepe/" target="_blank" rel="noopener">mehmet-ömer-tepe</a>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <span id="copyright"></span>
+      <span id="footer-loc">Istanbul · UTC+3</span>
+    </footer>
+
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var GITHUB_USERNAME = 'MOmerTepe';
+
+  var strings = {
+    en: {
+      tagline: 'EEE student · computer vision · Istanbul, TR',
+      themeSystem: 'system', themeLight: 'light', themeDark: 'dark',
+      aboutH: 'About', projectsH: 'Projects', contactH: 'Contact',
+      aboutP1: "I'm an Electrical & Electronics Engineering student at Istanbul Bilgi University, currently focused on computer vision.",
+      aboutP2a: "Nearly everything I build starts as a fix for a problem I've actually run into. ",
+      aboutP2b: ' began after a minor traffic accident: proving what happened meant scrubbing four dashcam feeds at once, and neither the mobile app nor the raw files made that practical. I built a tool that did, then polished it enough to publish.',
+      aboutP3: 'More projects are on the way as I clean them up for open source, the list below pulls straight from GitHub, so new ones (should) show up here automatically.',
+      fetching: 'fetching repositories…',
+      apiError: "couldn't reach the GitHub API — showing a cached list.",
+      seeAll: 'see all on GitHub',
+      noDesc: 'No description yet.',
+      emailLabel: 'email',
+      footerLoc: 'Istanbul · UTC+3',
+      months: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+    },
+    tr: {
+      tagline: 'EEE öğrencisi · bilgisayarlı görü (computer vision) · İstanbul, TR',
+      themeSystem: 'sistem', themeLight: 'açık', themeDark: 'koyu',
+      aboutH: 'Hakkında', projectsH: 'Projeler', contactH: 'İletişim',
+      aboutP1: "İstanbul Bilgi Üniversitesi'nde Elektrik-Elektronik Mühendisliği öğrencisiyim; şu sıralar ağırlıklı olarak bilgisayarlı görü (computer vision) üzerine çalışıyorum.",
+      aboutP2a: 'Yaptığım hemen her şey, gerçekten karşılaştığım bir sorunu çözmek için ortaya çıkıyor. ',
+      aboutP2b: ' küçük bir trafik kazasının ardından doğdu: ne olduğunu kanıtlamak dört kamera kaydını aynı anda taramayı gerektiriyordu; ne mobil uygulama ne de ham dosyalar bunu pratik kılıyordu. İşimi gören bir araç yazdım, sonra yayınlayacak hale getirdim.',
+      aboutP3: "Diğer projelerimi hazırladıkça yayınlayacağım; aşağıdaki liste doğrudan GitHub'dan çekiliyor, yani yenileri burada (teorik olarak) kendiliğinden görünecek.",
+      fetching: 'depolar getiriliyor…',
+      apiError: "GitHub API'ye ulaşılamadı — önbellekteki liste gösteriliyor.",
+      seeAll: "tümünü GitHub'da gör",
+      noDesc: 'Henüz açıklama yok.',
+      emailLabel: 'e-posta',
+      footerLoc: 'İstanbul · UTC+3',
+      months: ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara']
+    }
+  };
+
+  var state = {
+    theme: 'system',
+    lang: 'en',
+    repos: null,
+    reposLoading: true,
+    reposError: false
+  };
+
+  function $(id) { return document.getElementById(id); }
+
+  function applyTheme(theme) {
+    document.documentElement.style.colorScheme = theme === 'system' ? 'light dark' : theme;
+  }
+
+  function setTheme(theme) {
+    state.theme = theme;
+    applyTheme(theme);
+    try {
+      if (theme === 'system') localStorage.removeItem('omt-theme');
+      else localStorage.setItem('omt-theme', theme);
+    } catch (e) {}
+    render();
+  }
+
+  function setLang(lang) {
+    state.lang = lang;
+    document.documentElement.lang = lang;
+    try { localStorage.setItem('omt-lang', lang); } catch (e) {}
+    render();
+  }
+
+  function formatMeta(repo, months) {
+    var parts = [];
+    if (repo.language) parts.push(repo.language);
+    if (repo.stars > 0) parts.push('★ ' + repo.stars);
+    if (repo.pushedAt) {
+      var d = new Date(repo.pushedAt);
+      parts.push(months[d.getMonth()] + ' ' + d.getFullYear());
+    }
+    return parts.join(' · ');
+  }
+
+  function renderRepos() {
+    var t = strings[state.lang] || strings.en;
+    var list = $('repo-list');
+
+    $('repos-loading').hidden = !state.reposLoading;
+    list.hidden = state.reposLoading;
+    $('repos-error').hidden = state.reposLoading || !state.reposError;
+
+    if (state.reposLoading || !state.repos) return;
+
+    list.textContent = '';
+    state.repos.forEach(function (repo) {
+      var row = document.createElement('a');
+      row.className = 'repo-row';
+      row.href = repo.url;
+      row.target = '_blank';
+      row.rel = 'noopener';
+
+      var line1 = document.createElement('div');
+      line1.className = 'repo-line1';
+      var name = document.createElement('span');
+      name.className = 'repo-name';
+      name.textContent = repo.name;
+      var meta = document.createElement('span');
+      meta.className = 'repo-meta';
+      meta.textContent = formatMeta(repo, t.months);
+      line1.appendChild(name);
+      line1.appendChild(meta);
+
+      var desc = document.createElement('p');
+      desc.className = 'repo-desc';
+      desc.textContent = repo.description || t.noDesc;
+
+      row.appendChild(line1);
+      row.appendChild(desc);
+      list.appendChild(row);
+    });
+    var end = document.createElement('div');
+    end.className = 'repo-list-end';
+    list.appendChild(end);
+  }
+
+  function render() {
+    var t = strings[state.lang] || strings.en;
+
+    $('tagline').textContent = t.tagline;
+    $('about-h').textContent = t.aboutH;
+    $('about-p1').textContent = t.aboutP1;
+    $('about-p2a').textContent = t.aboutP2a;
+    $('about-p2b').textContent = t.aboutP2b;
+    $('about-p3').textContent = t.aboutP3;
+    $('projects-h').textContent = t.projectsH;
+    $('repos-loading').textContent = t.fetching;
+    $('repos-error-text').textContent = t.apiError;
+    $('repos-error-link').textContent = t.seeAll;
+    $('contact-h').textContent = t.contactH;
+    $('email-label').textContent = t.emailLabel;
+    $('copyright').textContent = '© ' + new Date().getFullYear() + ' Mehmet Ömer Tepe';
+    $('footer-loc').textContent = t.footerLoc;
+
+    $('theme-system').textContent = t.themeSystem;
+    $('theme-light').textContent = t.themeLight;
+    $('theme-dark').textContent = t.themeDark;
+
+    $('lang-en').classList.toggle('active', state.lang === 'en');
+    $('lang-tr').classList.toggle('active', state.lang === 'tr');
+    $('theme-system').classList.toggle('active', state.theme === 'system');
+    $('theme-light').classList.toggle('active', state.theme === 'light');
+    $('theme-dark').classList.toggle('active', state.theme === 'dark');
+
+    renderRepos();
+  }
+
+  function fetchRepos() {
+    fetch('https://api.github.com/users/' + GITHUB_USERNAME + '/repos?per_page=100&sort=pushed')
+      .then(function (res) {
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return res.json();
+      })
+      .then(function (data) {
+        state.repos = data
+          .filter(function (r) { return !r.fork && !r.name.toLowerCase().endsWith('.github.io'); })
+          .map(function (r) {
+            return {
+              name: r.name,
+              url: r.html_url,
+              description: r.description,
+              stars: r.stargazers_count,
+              language: r.language,
+              pushedAt: r.pushed_at
+            };
+          });
+        state.reposLoading = false;
+        state.reposError = false;
+        render();
+      })
+      .catch(function () {
+        state.repos = [{
+          name: 'openteslacam',
+          url: 'https://github.com/MOmerTepe/openteslacam',
+          description: 'Local, multi-feed viewer for Tesla dashcam clips — review all four cameras in sync without the mobile app.',
+          stars: 0,
+          language: 'JavaScript',
+          pushedAt: null
+        }];
+        state.reposLoading = false;
+        state.reposError = true;
+        render();
+      });
+  }
+
+  // Init
+  var savedTheme = null;
+  try { savedTheme = localStorage.getItem('omt-theme'); } catch (e) {}
+  if (savedTheme === 'light' || savedTheme === 'dark') state.theme = savedTheme;
+  applyTheme(state.theme);
+
+  var savedLang = null;
+  try { savedLang = localStorage.getItem('omt-lang'); } catch (e) {}
+  if (savedLang !== 'en' && savedLang !== 'tr') {
+    savedLang = (navigator.language || '').toLowerCase().indexOf('tr') === 0 ? 'tr' : 'en';
+  }
+  state.lang = savedLang;
+  document.documentElement.lang = savedLang;
+
+  $('lang-en').addEventListener('click', function () { setLang('en'); });
+  $('lang-tr').addEventListener('click', function () { setLang('tr'); });
+  $('theme-system').addEventListener('click', function () { setTheme('system'); });
+  $('theme-light').addEventListener('click', function () { setTheme('light'); });
+  $('theme-dark').addEventListener('click', function () { setTheme('dark'); });
+
+  render();
+  fetchRepos();
+})();
+</script>
+</body>
+</html>
