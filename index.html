@@ -264,6 +264,8 @@
   'use strict';
 
   var GITHUB_USERNAME = 'MOmerTepe';
+  // Forks are normally hidden; these are shown, mapped to their upstream repo.
+  var INCLUDED_FORKS = { deathbymedia: 'EmreSonal/DeathByMedia' };
 
   var strings = {
     en: {
@@ -278,6 +280,8 @@
       apiError: "couldn't reach the GitHub API — showing a cached list.",
       seeAll: 'see all on GitHub',
       noDesc: 'No description yet.',
+      forkLabel: 'fork',
+      forkNote: function (parent) { return "Fork of my friend's " + parent + '.'; },
       emailLabel: 'email',
       footerLoc: 'Istanbul · UTC+3',
       months: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
@@ -294,6 +298,8 @@
       apiError: "GitHub API'ye ulaşılamadı — önbellekteki liste gösteriliyor.",
       seeAll: "tümünü GitHub'da gör",
       noDesc: 'Henüz açıklama yok.',
+      forkLabel: 'fork',
+      forkNote: function (parent) { return 'Arkadaşımın ' + parent + " projesinin fork'u."; },
       emailLabel: 'e-posta',
       footerLoc: 'İstanbul · UTC+3',
       months: ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara']
@@ -331,8 +337,9 @@
     render();
   }
 
-  function formatMeta(repo, months) {
+  function formatMeta(repo, months, forkLabel) {
     var parts = [];
+    if (repo.forkOf) parts.push(forkLabel);
     if (repo.language) parts.push(repo.language);
     if (repo.stars > 0) parts.push('★ ' + repo.stars);
     if (repo.pushedAt) {
@@ -367,13 +374,16 @@
       name.textContent = repo.name;
       var meta = document.createElement('span');
       meta.className = 'repo-meta';
-      meta.textContent = formatMeta(repo, t.months);
+      meta.textContent = formatMeta(repo, t.months, t.forkLabel);
       line1.appendChild(name);
       line1.appendChild(meta);
 
       var desc = document.createElement('p');
       desc.className = 'repo-desc';
       desc.textContent = repo.description || t.noDesc;
+      if (repo.forkOf) {
+        desc.textContent += ' ' + t.forkNote(repo.forkOf);
+      }
 
       row.appendChild(line1);
       row.appendChild(desc);
@@ -423,7 +433,10 @@
       })
       .then(function (data) {
         state.repos = data
-          .filter(function (r) { return !r.fork && !r.name.toLowerCase().endsWith('.github.io'); })
+          .filter(function (r) {
+            if (r.name.toLowerCase().endsWith('.github.io')) return false;
+            return !r.fork || INCLUDED_FORKS[r.name.toLowerCase()];
+          })
           .map(function (r) {
             return {
               name: r.name,
@@ -431,7 +444,8 @@
               description: r.description,
               stars: r.stargazers_count,
               language: r.language,
-              pushedAt: r.pushed_at
+              pushedAt: r.pushed_at,
+              forkOf: r.fork ? INCLUDED_FORKS[r.name.toLowerCase()] : null
             };
           });
         state.reposLoading = false;
