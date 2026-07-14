@@ -9,6 +9,11 @@
     openteslacam: 'tools',
     deathbymedia: 'tools'
   };
+  // GitHub repo name (lowercase) -> case-study page on this site.
+  var WRITEUPS = {
+    openteslacam: '/projects/openteslacam/',
+    deathbymedia: '/projects/deathbymedia/'
+  };
   var CATEGORY_ORDER = ['cvml', 'hw', 'tools', 'other'];
   var CATEGORY_KEYS = { cvml: 'catCvml', hw: 'catHw', tools: 'catTools', other: 'catOther' };
   var REPO_CACHE_KEY = 'omt-repos-v1';
@@ -21,6 +26,9 @@
       id: 'quant-trading-system',
       cat: 'cvml',
       sortYear: 2027,
+      url: '/projects/quant-trading-system/',
+      internal: true,
+      writeup: true,
       meta: { en: 'in progress · Python', tr: 'devam ediyor · Python' },
       desc: {
         en: 'A multi-layered, unsupervised trading system combining classical quantitative-finance methods, traditional ML models, and high-frequency techniques — fine-tuned models handle cross-layer orchestration.',
@@ -74,11 +82,13 @@
 
   var OPENTESLACAM_STATIC = {
     id: 'openteslacam',
-    url: 'https://github.com/MOmerTepe/openteslacam',
+    url: '/projects/openteslacam/',
+    internal: true,
+    writeup: true,
     meta: { en: 'JavaScript', tr: 'JavaScript' },
     desc: {
-      en: 'Local, multi-feed viewer for Tesla dashcam clips — review all four cameras in sync without the mobile app.',
-      tr: 'Tesla araç kamerası kayıtları için yerel, çok görüntülü oynatıcı — dört kamerayı mobil uygulamaya gerek kalmadan senkronize izleyin.'
+      en: 'Local, multi-feed viewer for Tesla dashcam clips — review every camera in sync without the mobile app.',
+      tr: 'Tesla araç kamerası kayıtları için yerel, çok görüntülü oynatıcı — tüm kameraları mobil uygulamaya gerek kalmadan senkronize izleyin.'
     }
   };
 
@@ -130,17 +140,48 @@
       titleVrp: 'vr-fullbody-tracking — Ömer Tepe',
       vrpLede: 'Commercial full-body VR trackers can cost more than the headset, and single-camera tracking dies the moment you turn around. This project gets full-body presence in SteamVR from two ordinary cameras and a GPU that was already in the PC.',
       vrpStat1l: 'end-to-end latency', vrpStat2l: 'tracked joints', vrpStat3l: 'camera views', vrpStat4l: 'tensor-core inference',
-      vrpDemoH: 'The idea, animated',
+      demoH: 'The idea, animated',
+      whyH: 'Why',
+      howH: 'How it works',
       vrpDemoCap: "Interactive schematic — drag to orbit. Each camera casts a bearing ray at the highlighted joint; where the rays nearly intersect is the triangulated position. When the body blocks a camera's view, that ray fades, its confidence drops, and the fused estimate leans on the other view.",
-      vrpWhyH: 'Why',
       vrpWhy: "SteamVR only tracks your head and hands; games guess the rest — badly. Dedicated trackers work but the cost adds up fast, and single-camera webcam solutions lose joints to occlusion and dead zones as soon as you face away. Two cameras watching the play space from different angles remove most of those blind spots — if you can triangulate fast enough to keep up with VR.",
-      vrpHowH: 'How it works',
       vrpStep1k: 'calibrate', vrpStep1t: " — A one-time OpenCV calibration recovers each camera's extrinsic pose; for a fixed setup it's saved and never repeated.",
       vrpStep2k: 'estimate', vrpStep2t: ' — Each feed runs pose estimation with Tensor Core-accelerated inference on an RTX 3080, keeping end-to-end latency under 16 ms.',
       vrpStep3k: 'triangulate', vrpStep3t: ' — 17 joints are reconstructed in 3D by triangulating the estimates from both cameras.',
       vrpStep4k: 'fuse', vrpStep4t: ' — Estimates are merged with confidence weights, so an occluded or back-facing joint recovers smoothly instead of snapping.',
       vrpStep5k: 'integrate', vrpStep5t: ' — The output feeds SlimeVR, which SteamVR already understands — existing games just see standard trackers.',
       vrpStatus: "The code isn't public yet — it's being cleaned up for release, and it will appear on the projects page automatically when it lands on GitHub.",
+      titleOtc: 'openteslacam — Ömer Tepe',
+      otcLede: "After a minor traffic accident, proving what happened meant scrubbing several dashcam feeds at once — and neither Tesla's mobile app nor the raw files made that practical. openteslacam is a local desktop viewer that plays every camera in sync.",
+      otcStat1l: 'camera angles', otcStat2l: 'playback speeds', otcStat3l: 'cloud uploads', otcStat4v: '1-click', otcStat4l: 'clip export',
+      otcDemoCap: 'Interactive schematic — six virtual cameras watching one simulated drive, rendered from a single shared world. Drag the timeline to scrub: every view stays locked to the same instant, which is the whole point.',
+      otcWhy: 'Tesla stores each event as separate per-camera clips. Reviewing an incident means juggling files against a stopwatch, or squinting at the in-car viewer. A desktop player that treats all angles as one synchronized timeline turns minutes of scrubbing into seconds.',
+      otcStep1k: 'parse', otcStep1t: ' — Dashcam folders are parsed locally; clips are grouped into events and segments, and camera files are matched up by timestamp.',
+      otcStep2k: 'sync', otcStep2t: ' — Every feed plays against a single clock, so pausing, seeking and speed changes stay frame-aligned across all angles.',
+      otcStep3k: 'review', otcStep3t: ' — Review and Driving layouts, ¼×–4× playback and per-camera fullscreen make finding the critical frame fast.',
+      otcStep4k: 'export', otcStep4t: ' — The moment that matters leaves the app as a clip, one click.',
+      otcStep5k: 'private', otcStep5t: ' — Everything runs locally; footage never leaves the machine.',
+      otcStatus: 'Open source and actively developed —',
+      titleDbm: 'DeathByMedia — Ömer Tepe',
+      dbmLede: "A friend's all-in-one media toolbox — image, video and audio conversion plus a YouTube downloader — that I forked to restyle and extend. Drop files in, pick a target, let the queue do the rest.",
+      dbmStat1l: 'tools in one app', dbmStat2l: 'image formats', dbmStat3l: 'shared queue', dbmStat4l: 'UI stack',
+      dbmDemoCap: 'Interactive schematic of the queue — click to add a job. A couple of workers chew through whatever gets dropped in: images, video, audio or a YouTube link.',
+      dbmWhy: 'Quick conversions usually end at an ad-riddled website or a five-flag CLI incantation. One local app with a queue covers the boring 95%: this screenshot as WEBP, that recording as MP3, this talk saved for the plane.',
+      dbmStep1k: 'queue', dbmStep1t: ' — Every task, whatever the media type, becomes a job in one shared queue with visible progress and status.',
+      dbmStep2k: 'convert', dbmStep2t: ' — Conversions run locally; on the image side alone that covers PNG, JPG, WEBP, BMP, TIFF, GIF, ICO and SVG.',
+      dbmStep3k: 'download', dbmStep3t: ' — The YouTube module fetches video or audio at a chosen quality, straight into a folder you pick.',
+      dbmStep4k: 'diverge', dbmStep4t: ' — This fork keeps the upstream engine, swaps in an alternative theme and adds features — a testbed before changes go back to EmreSonal/DeathByMedia.',
+      dbmStatus: 'A fork maintained on GitHub —',
+      titleQts: 'quant-trading-system — Ömer Tepe',
+      qtsLede: 'A multi-layered trading research system — current working name ml-trader — combining classical quantitative methods, traditional ML models and high-frequency techniques, with fine-tuned models orchestrating the layers. It produces suggestions, not trades: paper only, by design.',
+      qtsStat1l: 'signal layers', qtsStat2l: 'engineered features', qtsStat3l: 'broker mode', qtsStat4v: '100%', qtsStat4l: 'local-first',
+      qtsDemoCap: 'Interactive schematic — one simulated price stream, three signal layers reacting at different speeds, one fused suggestion. Click the chart to inject a shock and watch fast layers flip while slow ones take their time. Simulated data — not financial advice.',
+      qtsWhy: 'Single-model systems fail in boring ways: a trend model is blind to microstructure; a fast signal overreacts to noise. Layering slow classical indicators, mid-speed ML models and fast execution-level features — then letting an orchestrator weigh their confidence — gives every timescale a voice without letting any single one drive.',
+      qtsStep1k: 'ingest', qtsStep1t: ' — Market data streams in and features are engineered per timescale — 34 of them and counting.',
+      qtsStep2k: 'layer', qtsStep2t: ' — Three independent layers score the same stream: classical quant signals, trained ML models and HFT-style microstructure features.',
+      qtsStep3k: 'orchestrate', qtsStep3t: " — A fine-tuned model weighs each layer's output and confidence into a single suggestion; dedicated sub-agents add macroeconomic context.",
+      qtsStep4k: 'paper', qtsStep4t: " — Suggestions land in a paper-trading terminal for evaluation. It never executes real trades — it's research tooling, not an autotrader.",
+      qtsStatus: 'In progress, targeted for early 2027; the interface is a moving target and will keep changing. Suggestions only, never executes trades — and nothing here is financial advice.',
       footerLoc: 'Istanbul · UTC+3',
       months: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
     },
@@ -184,17 +225,48 @@
       titleVrp: 'vr-fullbody-tracking — Ömer Tepe',
       vrpLede: "Ticari tüm vücut VR takipçileri başlığın kendisinden pahalıya gelebiliyor; tek kameralı takip ise arkanızı döndüğünüz anda kopuyor. Bu proje, SteamVR'da tüm vücut varlığını iki sıradan kamera ve zaten kasada duran bir GPU ile sağlıyor.",
       vrpStat1l: 'uçtan uca gecikme', vrpStat2l: 'takip edilen eklem', vrpStat3l: 'kamera görüşü', vrpStat4l: 'tensor-core çıkarımı',
-      vrpDemoH: 'Fikrin animasyonu',
+      demoH: 'Fikrin animasyonu',
+      whyH: 'Neden',
+      howH: 'Nasıl çalışıyor',
       vrpDemoCap: 'Etkileşimli şema — döndürmek için sürükleyin. Her kamera, vurgulanan ekleme bir yön ışını gönderir; ışınların kesişmeye en yaklaştığı nokta üçgenlenmiş konumdur. Gövde bir kameranın görüşünü kapattığında o ışın soluklaşır, güveni düşer ve birleşik kestirim diğer görüşe yaslanır.',
-      vrpWhyH: 'Neden',
       vrpWhy: "SteamVR yalnızca başınızı ve ellerinizi takip eder; oyunlar gerisini tahmin eder — kötü tahmin eder. Özel takipçiler çalışıyor ama maliyet hızla katlanıyor; tek kameralı webcam çözümleri ise siz arkanızı döner dönmez eklemleri oklüzyona ve ölü bölgelere kaptırıyor. Oyun alanına farklı açılardan bakan iki kamera bu kör noktaların çoğunu ortadan kaldırıyor — yeter ki VR'a yetişecek hızda üçgenleme yapabilin.",
-      vrpHowH: 'Nasıl çalışıyor',
       vrpStep1k: 'kalibrasyon', vrpStep1t: ' — Tek seferlik OpenCV kalibrasyonu her kameranın dışsal (extrinsic) pozunu çıkarıyor; sabit bir düzen için sonuç kaydediliyor ve bir daha tekrarlanmıyor.',
       vrpStep2k: 'kestirim', vrpStep2t: " — Her görüntü akışı, RTX 3080 üzerinde Tensor Core hızlandırmalı çıkarımla poz kestirimi çalıştırıyor; uçtan uca gecikme 16 ms'nin altında kalıyor.",
       vrpStep3k: 'üçgenleme', vrpStep3t: ' — 17 eklem, iki kameranın kestirimlerinin üçgenlenmesiyle 3B olarak yeniden kuruluyor.',
       vrpStep4k: 'füzyon', vrpStep4t: ' — Kestirimler güven ağırlıklarıyla birleştiriliyor; görüşü kapanan ya da sırtı dönük bir eklem aniden sıçramak yerine yumuşakça toparlanıyor.',
       vrpStep5k: 'entegrasyon', vrpStep5t: " — Sonuç, SteamVR'ın zaten tanıdığı SlimeVR'a besleniyor; mevcut oyunlar standart takipçi görüyor.",
       vrpStatus: "Kod henüz açık değil — yayına hazırlanıyor; GitHub'a düştüğünde projeler sayfasında kendiliğinden görünecek.",
+      titleOtc: 'openteslacam — Ömer Tepe',
+      otcLede: "Küçük bir trafik kazasının ardından ne olduğunu kanıtlamak, birden çok kamera kaydını aynı anda taramayı gerektiriyordu — ne Tesla'nın mobil uygulaması ne de ham dosyalar bunu pratik kılıyordu. openteslacam, tüm kameraları senkronize oynatan yerel bir masaüstü oynatıcı.",
+      otcStat1l: 'kamera açısı', otcStat2l: 'oynatma hızı', otcStat3l: 'buluta yükleme', otcStat4v: '1 tık', otcStat4l: 'klip dışa aktarma',
+      otcDemoCap: 'Etkileşimli şema — tek bir simüle sürüşü izleyen altı sanal kamera, aynı ortak sahneden çiziliyor. Zaman çizgisini sürükleyin: her görünüm aynı âna kilitli kalır — zaten bütün mesele bu.',
+      otcWhy: 'Tesla her olayı kamera başına ayrı klipler olarak kaydediyor. Bir olayı incelemek, elde kronometreyle dosya değiştirmek ya da araç içi oynatıcıya gözlerini kısarak bakmak demek. Tüm açıları tek bir senkron zaman çizgisi olarak ele alan bir masaüstü oynatıcı, dakikalarca taramayı saniyelere indiriyor.',
+      otcStep1k: 'ayrıştırma', otcStep1t: ' — Kayıt klasörleri yerelde ayrıştırılıyor; klipler olaylara ve segmentlere gruplanıyor, kamera dosyaları zaman damgasıyla eşleştiriliyor.',
+      otcStep2k: 'senkron', otcStep2t: ' — Tüm akışlar tek bir saate göre oynuyor; duraklatma, arama ve hız değişimi her açıda kare hizalı kalıyor.',
+      otcStep3k: 'inceleme', otcStep3t: ' — İnceleme ve Sürüş düzenleri, ¼×–4× oynatma ve kamera başına tam ekran, kritik kareyi bulmayı hızlandırıyor.',
+      otcStep4k: 'dışa aktarma', otcStep4t: ' — Önemli an, tek tıkla uygulamadan klip olarak çıkıyor.',
+      otcStep5k: 'gizlilik', otcStep5t: ' — Her şey yerelde çalışıyor; görüntüler makineden dışarı çıkmıyor.',
+      otcStatus: 'Açık kaynak, aktif geliştiriliyor —',
+      titleDbm: 'DeathByMedia — Ömer Tepe',
+      dbmLede: "Bir arkadaşımın hepsi bir arada medya araç kutusu — görüntü, video ve ses dönüştürme, artı bir YouTube indirici — temasını değiştirip genişletmek için fork'ladım. Dosyaları bırakın, hedefi seçin, gerisini kuyruk halletsin.",
+      dbmStat1l: 'tek uygulamada araç', dbmStat2l: 'görüntü formatı', dbmStat3l: 'ortak kuyruk', dbmStat4l: 'arayüz',
+      dbmDemoCap: 'Kuyruğun etkileşimli şeması — iş eklemek için tıklayın. Birkaç işçi, ne bırakılırsa onu işliyor: görüntü, video, ses ya da bir YouTube bağlantısı.',
+      dbmWhy: "Hızlı dönüştürmeler genelde reklam dolu bir sitede ya da beş parametreli bir CLI büyüsünde bitiyor. Kuyruklu tek bir yerel uygulama sıkıcı %95'i karşılıyor: şu ekran görüntüsü WEBP olsun, şu kaydın sesi MP3, şu konuşma uçak için insin.",
+      dbmStep1k: 'kuyruk', dbmStep1t: ' — Medya türü ne olursa olsun her görev, ilerlemesi ve durumu görünen tek bir ortak kuyrukta iş oluyor.',
+      dbmStep2k: 'dönüştürme', dbmStep2t: " — Dönüştürmeler yerelde çalışıyor; yalnızca görüntü tarafı PNG, JPG, WEBP, BMP, TIFF, GIF, ICO ve SVG'yi kapsıyor.",
+      dbmStep3k: 'indirme', dbmStep3t: ' — YouTube modülü, seçilen kalitede video ya da sesi doğrudan belirlediğiniz klasöre indiriyor.',
+      dbmStep4k: 'fork', dbmStep4t: " — Bu fork üstteki motoru koruyor, alternatif bir tema ve birkaç ek özellik getiriyor — değişiklikler EmreSonal/DeathByMedia'ya dönmeden önce bir deneme alanı.",
+      dbmStatus: "GitHub'da sürdürülen bir fork —",
+      titleQts: 'quant-trading-system — Ömer Tepe',
+      qtsLede: 'Çok katmanlı bir alım-satım araştırma sistemi — güncel çalışma adı ml-trader — klasik kantitatif yöntemleri, geleneksel ML modellerini ve yüksek frekans tekniklerini birleştiriyor; katmanları ince ayarlı modeller orkestre ediyor. Ürettiği şey işlem değil öneri: tasarım gereği yalnızca paper.',
+      qtsStat1l: 'sinyal katmanı', qtsStat2l: 'öznitelik', qtsStat3l: 'broker modu', qtsStat4v: '%100', qtsStat4l: 'yerel öncelikli',
+      qtsDemoCap: 'Etkileşimli şema — tek bir simüle fiyat akışı, farklı hızlarda tepki veren üç sinyal katmanı, tek bir birleşik öneri. Şok enjekte etmek için grafiğe tıklayın: hızlı katmanlar anında dönerken yavaşlar ağırdan alıyor. Simüle veri — yatırım tavsiyesi değildir.',
+      qtsWhy: 'Tek modelli sistemler sıkıcı şekillerde başarısız olur: trend modeli mikro yapıyı görmez, hızlı sinyal gürültüye aşırı tepki verir. Yavaş klasik göstergeleri, orta hızlı ML modellerini ve hızlı işlem-düzeyi öznitelikleri katmanlamak — sonra güvenlerini tartan bir orkestratöre bırakmak — direksiyonu tek birine vermeden her zaman ölçeğine söz hakkı tanıyor.',
+      qtsStep1k: 'veri', qtsStep1t: ' — Piyasa verisi akıyor; öznitelikler zaman ölçeği başına üretiliyor — şimdilik 34 tane.',
+      qtsStep2k: 'katman', qtsStep2t: ' — Üç bağımsız katman aynı akışı puanlıyor: klasik kantitatif sinyaller, eğitilmiş ML modelleri ve HFT tarzı mikro yapı öznitelikleri.',
+      qtsStep3k: 'orkestrasyon', qtsStep3t: ' — İnce ayarlı bir model, katman çıktılarını ve güvenlerini tek bir öneride tartıyor; özel alt-ajanlar makroekonomik bağlam ekliyor.',
+      qtsStep4k: 'paper', qtsStep4t: ' — Öneriler değerlendirme için paper işlem terminaline düşüyor. Gerçek işlem asla yapılmıyor — bu bir araştırma aracı, otomatik alım-satım botu değil.',
+      qtsStatus: 'Devam ediyor, hedef 2027 başı; arayüz hareketli bir hedef, değişmeye devam edecek. Yalnızca öneri üretir, asla işlem yapmaz — ve buradaki hiçbir şey yatırım tavsiyesi değildir.',
       footerLoc: 'İstanbul · UTC+3',
       months: ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara']
     }
@@ -258,12 +330,15 @@
   // catalog entry ({id, url?, meta: {en,tr}, desc: {en,tr}}).
   function buildRow(entry, t) {
     var isCatalog = !!entry.id;
-    var url = entry.url || null;
+    var writeupUrl = !isCatalog && WRITEUPS[(entry.name || '').toLowerCase()];
+    var url = writeupUrl || entry.url || null;
+    var internal = isCatalog ? entry.internal : !!writeupUrl;
+    var hasWriteup = entry.writeup || !!writeupUrl;
     var row = document.createElement(url ? 'a' : 'div');
     row.className = 'repo-row' + (url ? '' : ' repo-row-static');
     if (url) {
       row.href = url;
-      if (!entry.internal) {
+      if (!internal) {
         row.target = '_blank';
         row.rel = 'noopener';
       }
@@ -277,7 +352,7 @@
     var meta = document.createElement('span');
     meta.className = 'repo-meta';
     var metaText = isCatalog ? (entry.meta[state.lang] || entry.meta.en) : formatRepoMeta(entry, t);
-    if (entry.writeup) metaText += ' · ' + t.writeupLabel;
+    if (hasWriteup) metaText += ' · ' + t.writeupLabel;
     meta.textContent = metaText;
     line1.appendChild(name);
     line1.appendChild(meta);

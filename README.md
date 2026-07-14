@@ -8,6 +8,7 @@ Plain HTML/CSS/JS — no build step. Push to `main` and GitHub Pages deploys it.
 
 - `index.html` — home: about, selected projects, contact
 - `projects/` — all projects, grouped by category; published repos are pulled live from the GitHub API, unpublished ones come from the catalog in `assets/site.js`
+- `projects/<slug>/` — per-project case studies, each with an interactive canvas schematic (`demo.js`, vanilla JS, no dependencies)
 - `resume/` — embedded PDF viewer + download link (`assets/resume.pdf`)
 - `404.html` — custom not-found page
 - `assets/site.css`, `assets/site.js` — shared styles, i18n (EN/TR), theming, project catalog
@@ -17,3 +18,4 @@ Plain HTML/CSS/JS — no build step. Push to `main` and GitHub Pages deploys it.
 - **New repo published?** It shows up on the projects page automatically (under "Other" unless mapped). To categorize it, add its lowercase name to `REPO_CATEGORIES` in `assets/site.js`; if it replaces a catalog entry, delete that entry from `LOCAL_PROJECTS`.
 - **New unpublished project?** Add an entry to `LOCAL_PROJECTS` in `assets/site.js` (EN + TR description).
 - **New resume?** Overwrite `assets/resume.pdf`.
+- **New case study?** Copy an existing `projects/<slug>/` pair (`index.html` + `demo.js`), add its strings to both dictionaries in `assets/site.js`, link it up (`WRITEUPS` for GitHub repos, `url`/`writeup` on the `LOCAL_PROJECTS` entry otherwise), and add the URL to `sitemap.xml`.
