@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://omertepe.com/sitemap.xml

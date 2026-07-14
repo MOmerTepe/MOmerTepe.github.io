@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <style>
+    rect { fill: #141413; }
+    text { fill: #e6e6e1; }
+    @media (prefers-color-scheme: dark) {
+      rect { fill: #e9e9e4; }
+      text { fill: #141413; }
+    }
+  </style>
+  <rect width="64" height="64"/>
+  <text x="32" y="44" font-family="'IBM Plex Mono', ui-monospace, monospace" font-size="30" font-weight="600" text-anchor="middle">öt</text>
+</svg>
