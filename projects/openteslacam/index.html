@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>openteslacam — Ömer Tepe</title>
+  <meta name="description" content="Case study: openteslacam — a local desktop viewer that plays every Tesla dashcam camera in sync, with ¼×–4× playback and one-click clip export.">
+  <link rel="canonical" href="https://omertepe.com/projects/openteslacam/">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="openteslacam — Mehmet Ömer Tepe">
+  <meta property="og:description" content="A local desktop viewer that plays every Tesla dashcam camera in sync.">
+  <meta property="og:url" content="https://omertepe.com/projects/openteslacam/">
+  <meta name="twitter:card" content="summary">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <script>try{var s=localStorage.getItem('omt-theme');if(s==='light'||s==='dark')document.documentElement.style.colorScheme=s;}catch(e){}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Sans:ital,wght@0,400;0,450;0,500;0,600;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/site.css">
+</head>
+<body data-page="projects" data-title="titleOtc">
+<div class="page">
+  <div class="container">
+
+    <header>
+      <div class="header-left">
+        <h1><a href="/">Mehmet Ömer Tepe</a></h1>
+        <p class="tagline" data-i18n="tagline"></p>
+      </div>
+      <div class="toggles">
+        <div class="toggle-row" aria-label="Language">
+          <button id="lang-en" title="English">en</button>
+          <button id="lang-tr" title="Türkçe">tr</button>
+        </div>
+        <div class="toggle-row" aria-label="Color theme">
+          <button id="theme-system" title="Follow system theme" data-i18n="themeSystem"></button>
+          <button id="theme-light" title="Light theme" data-i18n="themeLight"></button>
+          <button id="theme-dark" title="Dark theme" data-i18n="themeDark"></button>
+        </div>
+      </div>
+    </header>
+
+    <nav class="site-nav" aria-label="Site">
+      <a href="/" data-nav="home" data-i18n="navHome"></a>
+      <a href="/projects/" data-nav="projects" data-i18n="navProjects"></a>
+      <a href="/resume/" data-nav="resume" data-i18n="navResume"></a>
+    </nav>
+
+    <section class="page-top">
+      <div class="crumb-row">
+        <p class="crumb"><a href="/projects/" data-i18n="navProjects"></a> / openteslacam</p>
+        <a class="gh-link" href="https://github.com/MOmerTepe/openteslacam" target="_blank" rel="noopener">github ↗</a>
+      </div>
+      <div class="proj-head">
+        <h2>openteslacam</h2>
+        <span class="repo-meta">2026 · JavaScript · desktop</span>
+      </div>
+      <p class="proj-lede" data-i18n="otcLede"></p>
+      <div class="stats">
+        <div class="stat"><span class="stat-v">6</span><span class="stat-l" data-i18n="otcStat1l"></span></div>
+        <div class="stat"><span class="stat-v">¼×–4×</span><span class="stat-l" data-i18n="otcStat2l"></span></div>
+        <div class="stat"><span class="stat-v">0</span><span class="stat-l" data-i18n="otcStat3l"></span></div>
+        <div class="stat"><span class="stat-v" data-i18n="otcStat4v"></span><span class="stat-l" data-i18n="otcStat4l"></span></div>
+      </div>
+    </section>
+
+    <section class="projects">
+      <h2 class="section-h" data-i18n="demoH"></h2>
+      <div class="demo-box">
+        <canvas id="otc-demo" role="img" aria-label="Animated schematic: six synchronized camera views of one simulated drive with a scrubbable timeline"></canvas>
+      </div>
+      <p class="demo-caption" data-i18n="otcDemoCap"></p>
+    </section>
+
+    <section class="projects">
+      <h2 class="section-h" data-i18n="whyH"></h2>
+      <p data-i18n="otcWhy" style="margin: 0; text-wrap: pretty;"></p>
+    </section>
+
+    <section class="projects">
+      <h2 class="section-h" data-i18n="howH"></h2>
+      <ol class="steps">
+        <li><span class="step-k" data-i18n="otcStep1k"></span><span data-i18n="otcStep1t"></span></li>
+        <li><span class="step-k" data-i18n="otcStep2k"></span><span data-i18n="otcStep2t"></span></li>
+        <li><span class="step-k" data-i18n="otcStep3k"></span><span data-i18n="otcStep3t"></span></li>
+        <li><span class="step-k" data-i18n="otcStep4k"></span><span data-i18n="otcStep4t"></span></li>
+        <li><span class="step-k" data-i18n="otcStep5k"></span><span data-i18n="otcStep5t"></span></li>
+      </ol>
+    </section>
+
+    <section class="projects">
+      <p class="status-note"><span data-i18n="otcStatus"></span> <a class="body-link" href="https://github.com/MOmerTepe/openteslacam" target="_blank" rel="noopener">github.com/MOmerTepe/openteslacam ↗</a></p>
+    </section>
+
+    <footer>
+      <span id="copyright"></span>
+      <span data-i18n="footerLoc"></span>
+    </footer>
+
+  </div>
+</div>
+<script src="/assets/site.js"></script>
+<script src="/projects/openteslacam/demo.js"></script>
+</body>
+</html>

@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DeathByMedia — Ömer Tepe</title>
+  <meta name="description" content="Case study: DeathByMedia — an all-in-one local media toolbox (image, video, audio conversion and a YouTube downloader) forked to restyle and extend.">
+  <link rel="canonical" href="https://omertepe.com/projects/deathbymedia/">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="DeathByMedia — Mehmet Ömer Tepe">
+  <meta property="og:description" content="An all-in-one local media toolbox: conversions and downloads through one queue.">
+  <meta property="og:url" content="https://omertepe.com/projects/deathbymedia/">
+  <meta name="twitter:card" content="summary">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <script>try{var s=localStorage.getItem('omt-theme');if(s==='light'||s==='dark')document.documentElement.style.colorScheme=s;}catch(e){}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Sans:ital,wght@0,400;0,450;0,500;0,600;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/site.css">
+</head>
+<body data-page="projects" data-title="titleDbm">
+<div class="page">
+  <div class="container">
+
+    <header>
+      <div class="header-left">
+        <h1><a href="/">Mehmet Ömer Tepe</a></h1>
+        <p class="tagline" data-i18n="tagline"></p>
+      </div>
+      <div class="toggles">
+        <div class="toggle-row" aria-label="Language">
+          <button id="lang-en" title="English">en</button>
+          <button id="lang-tr" title="Türkçe">tr</button>
+        </div>
+        <div class="toggle-row" aria-label="Color theme">
+          <button id="theme-system" title="Follow system theme" data-i18n="themeSystem"></button>
+          <button id="theme-light" title="Light theme" data-i18n="themeLight"></button>
+          <button id="theme-dark" title="Dark theme" data-i18n="themeDark"></button>
+        </div>
+      </div>
+    </header>
+
+    <nav class="site-nav" aria-label="Site">
+      <a href="/" data-nav="home" data-i18n="navHome"></a>
+      <a href="/projects/" data-nav="projects" data-i18n="navProjects"></a>
+      <a href="/resume/" data-nav="resume" data-i18n="navResume"></a>
+    </nav>
+
+    <section class="page-top">
+      <div class="crumb-row">
+        <p class="crumb"><a href="/projects/" data-i18n="navProjects"></a> / deathbymedia</p>
+        <a class="gh-link" href="https://github.com/MOmerTepe/DeathByMedia" target="_blank" rel="noopener">github ↗</a>
+      </div>
+      <div class="proj-head">
+        <h2>DeathByMedia</h2>
+        <span class="repo-meta">2026 · Svelte · fork</span>
+      </div>
+      <p class="proj-lede" data-i18n="dbmLede"></p>
+      <div class="stats">
+        <div class="stat"><span class="stat-v">4</span><span class="stat-l" data-i18n="dbmStat1l"></span></div>
+        <div class="stat"><span class="stat-v">8</span><span class="stat-l" data-i18n="dbmStat2l"></span></div>
+        <div class="stat"><span class="stat-v">1</span><span class="stat-l" data-i18n="dbmStat3l"></span></div>
+        <div class="stat"><span class="stat-v">Svelte</span><span class="stat-l" data-i18n="dbmStat4l"></span></div>
+      </div>
+    </section>
+
+    <section class="projects">
+      <h2 class="section-h" data-i18n="demoH"></h2>
+      <div class="demo-box">
+        <canvas id="dbm-demo" role="img" aria-label="Animated schematic: a media conversion queue with jobs progressing through two workers"></canvas>
+      </div>
+      <p class="demo-caption" data-i18n="dbmDemoCap"></p>
+    </section>
+
+    <section class="projects">
+      <h2 class="section-h" data-i18n="whyH"></h2>
+      <p data-i18n="dbmWhy" style="margin: 0; text-wrap: pretty;"></p>
+    </section>
+
+    <section class="projects">
+      <h2 class="section-h" data-i18n="howH"></h2>
+      <ol class="steps">
+        <li><span class="step-k" data-i18n="dbmStep1k"></span><span data-i18n="dbmStep1t"></span></li>
+        <li><span class="step-k" data-i18n="dbmStep2k"></span><span data-i18n="dbmStep2t"></span></li>
+        <li><span class="step-k" data-i18n="dbmStep3k"></span><span data-i18n="dbmStep3t"></span></li>
+        <li><span class="step-k" data-i18n="dbmStep4k"></span><span data-i18n="dbmStep4t"></span></li>
+      </ol>
+    </section>
+
+    <section class="projects">
+      <p class="status-note"><span data-i18n="dbmStatus"></span> <a class="body-link" href="https://github.com/MOmerTepe/DeathByMedia" target="_blank" rel="noopener">github.com/MOmerTepe/DeathByMedia ↗</a></p>
+    </section>
+
+    <footer>
+      <span id="copyright"></span>
+      <span data-i18n="footerLoc"></span>
+    </footer>
+
+  </div>
+</div>
+<script src="/assets/site.js"></script>
+<script src="/projects/deathbymedia/demo.js"></script>
+</body>
+</html>

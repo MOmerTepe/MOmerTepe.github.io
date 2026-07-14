@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>vr-fullbody-tracking — Ömer Tepe</title>
+  <meta name="description" content="Case study: real-time multi-camera full-body VR tracking — 17 joints triangulated from two cameras with confidence-weighted fusion at sub-16 ms latency, integrated with SteamVR via SlimeVR.">
+  <link rel="canonical" href="https://omertepe.com/projects/vr-fullbody-tracking/">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="vr-fullbody-tracking — Mehmet Ömer Tepe">
+  <meta property="og:description" content="Full-body presence in SteamVR from two ordinary cameras: triangulation, confidence-weighted fusion, sub-16 ms latency.">
+  <meta property="og:url" content="https://omertepe.com/projects/vr-fullbody-tracking/">
+  <meta name="twitter:card" content="summary">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <script>try{var s=localStorage.getItem('omt-theme');if(s==='light'||s==='dark')document.documentElement.style.colorScheme=s;}catch(e){}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Sans:ital,wght@0,400;0,450;0,500;0,600;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/site.css">
+</head>
+<body data-page="projects" data-title="titleVrp">
+<div class="page">
+  <div class="container">
+
+    <header>
+      <div class="header-left">
+        <h1><a href="/">Mehmet Ömer Tepe</a></h1>
+        <p class="tagline" data-i18n="tagline"></p>
+      </div>
+      <div class="toggles">
+        <div class="toggle-row" aria-label="Language">
+          <button id="lang-en" title="English">en</button>
+          <button id="lang-tr" title="Türkçe">tr</button>
+        </div>
+        <div class="toggle-row" aria-label="Color theme">
+          <button id="theme-system" title="Follow system theme" data-i18n="themeSystem"></button>
+          <button id="theme-light" title="Light theme" data-i18n="themeLight"></button>
+          <button id="theme-dark" title="Dark theme" data-i18n="themeDark"></button>
+        </div>
+      </div>
+    </header>
+
+    <nav class="site-nav" aria-label="Site">
+      <a href="/" data-nav="home" data-i18n="navHome"></a>
+      <a href="/projects/" data-nav="projects" data-i18n="navProjects"></a>
+      <a href="/resume/" data-nav="resume" data-i18n="navResume"></a>
+    </nav>
+
+    <section class="page-top">
+      <p class="crumb"><a href="/projects/" data-i18n="navProjects"></a> / vr-fullbody-tracking</p>
+      <div class="proj-head">
+        <h2>vr-fullbody-tracking</h2>
+        <span class="repo-meta">2026 · Python · OpenCV · SteamVR</span>
+      </div>
+      <p class="proj-lede" data-i18n="vrpLede"></p>
+      <div class="stats">
+        <div class="stat"><span class="stat-v">&lt;16 ms</span><span class="stat-l" data-i18n="vrpStat1l"></span></div>
+        <div class="stat"><span class="stat-v">17</span><span class="stat-l" data-i18n="vrpStat2l"></span></div>
+        <div class="stat"><span class="stat-v">2</span><span class="stat-l" data-i18n="vrpStat3l"></span></div>
+        <div class="stat"><span class="stat-v">RTX 3080</span><span class="stat-l" data-i18n="vrpStat4l"></span></div>
+      </div>
+    </section>
+
+    <section class="projects">
+      <h2 class="section-h" data-i18n="demoH"></h2>
+      <div class="demo-box">
+        <canvas id="vr-demo" role="img" aria-label="Animated schematic: two cameras triangulating the joints of a walking wireframe figure"></canvas>
+      </div>
+      <p class="demo-caption" data-i18n="vrpDemoCap"></p>
+    </section>
+
+    <section class="projects">
+      <h2 class="section-h" data-i18n="whyH"></h2>
+      <p data-i18n="vrpWhy" style="margin: 0; text-wrap: pretty;"></p>
+    </section>
+
+    <section class="projects">
+      <h2 class="section-h" data-i18n="howH"></h2>
+      <ol class="steps">
+        <li><span class="step-k" data-i18n="vrpStep1k"></span><span data-i18n="vrpStep1t"></span></li>
+        <li><span class="step-k" data-i18n="vrpStep2k"></span><span data-i18n="vrpStep2t"></span></li>
+        <li><span class="step-k" data-i18n="vrpStep3k"></span><span data-i18n="vrpStep3t"></span></li>
+        <li><span class="step-k" data-i18n="vrpStep4k"></span><span data-i18n="vrpStep4t"></span></li>
+        <li><span class="step-k" data-i18n="vrpStep5k"></span><span data-i18n="vrpStep5t"></span></li>
+      </ol>
+    </section>
+
+    <section class="projects">
+      <p class="status-note" data-i18n="vrpStatus"></p>
+    </section>
+
+    <footer>
+      <span id="copyright"></span>
+      <span data-i18n="footerLoc"></span>
+    </footer>
+
+  </div>
+</div>
+<script src="/assets/site.js"></script>
+<script src="/projects/vr-fullbody-tracking/demo.js"></script>
+</body>
+</html>
