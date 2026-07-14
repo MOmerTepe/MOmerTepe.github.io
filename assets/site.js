@@ -31,6 +31,9 @@
       id: 'vr-fullbody-tracking',
       cat: 'cvml',
       sortYear: 2026,
+      url: '/projects/vr-fullbody-tracking/',
+      internal: true,
+      writeup: true,
       meta: { en: '2026 · Python · OpenCV', tr: '2026 · Python · OpenCV' },
       desc: {
         en: 'Low-cost full-body tracking for SteamVR: 17 joints triangulated from two cameras with confidence-weighted fusion, at sub-16 ms end-to-end latency on an RTX 3080. Plugs into existing VR games through SlimeVR.',
@@ -123,6 +126,21 @@
       resumeFallback: "Your browser can't display PDFs inline — use the download link above.",
       nfMsg: "This page doesn't exist. Maybe it moved; maybe it never did.",
       backHome: 'back to home →',
+      writeupLabel: 'writeup →',
+      titleVrp: 'vr-fullbody-tracking — Ömer Tepe',
+      vrpLede: 'Commercial full-body VR trackers can cost more than the headset, and single-camera tracking dies the moment you turn around. This project gets full-body presence in SteamVR from two ordinary cameras and a GPU that was already in the PC.',
+      vrpStat1l: 'end-to-end latency', vrpStat2l: 'tracked joints', vrpStat3l: 'camera views', vrpStat4l: 'tensor-core inference',
+      vrpDemoH: 'The idea, animated',
+      vrpDemoCap: "Interactive schematic — drag to orbit. Each camera casts a bearing ray at the highlighted joint; where the rays nearly intersect is the triangulated position. When the body blocks a camera's view, that ray fades, its confidence drops, and the fused estimate leans on the other view.",
+      vrpWhyH: 'Why',
+      vrpWhy: "SteamVR only tracks your head and hands; games guess the rest — badly. Dedicated trackers work but the cost adds up fast, and single-camera webcam solutions lose joints to occlusion and dead zones as soon as you face away. Two cameras watching the play space from different angles remove most of those blind spots — if you can triangulate fast enough to keep up with VR.",
+      vrpHowH: 'How it works',
+      vrpStep1k: 'calibrate', vrpStep1t: " — A one-time OpenCV calibration recovers each camera's extrinsic pose; for a fixed setup it's saved and never repeated.",
+      vrpStep2k: 'estimate', vrpStep2t: ' — Each feed runs pose estimation with Tensor Core-accelerated inference on an RTX 3080, keeping end-to-end latency under 16 ms.',
+      vrpStep3k: 'triangulate', vrpStep3t: ' — 17 joints are reconstructed in 3D by triangulating the estimates from both cameras.',
+      vrpStep4k: 'fuse', vrpStep4t: ' — Estimates are merged with confidence weights, so an occluded or back-facing joint recovers smoothly instead of snapping.',
+      vrpStep5k: 'integrate', vrpStep5t: ' — The output feeds SlimeVR, which SteamVR already understands — existing games just see standard trackers.',
+      vrpStatus: "The code isn't public yet — it's being cleaned up for release, and it will appear on the projects page automatically when it lands on GitHub.",
       footerLoc: 'Istanbul · UTC+3',
       months: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
     },
@@ -162,6 +180,21 @@
       resumeFallback: "Tarayıcınız PDF'i sayfa içinde gösteremiyor — yukarıdaki indirme bağlantısını kullanın.",
       nfMsg: 'Böyle bir sayfa yok. Belki taşındı, belki hiç olmadı.',
       backHome: 'ana sayfaya dön →',
+      writeupLabel: 'detaylar →',
+      titleVrp: 'vr-fullbody-tracking — Ömer Tepe',
+      vrpLede: "Ticari tüm vücut VR takipçileri başlığın kendisinden pahalıya gelebiliyor; tek kameralı takip ise arkanızı döndüğünüz anda kopuyor. Bu proje, SteamVR'da tüm vücut varlığını iki sıradan kamera ve zaten kasada duran bir GPU ile sağlıyor.",
+      vrpStat1l: 'uçtan uca gecikme', vrpStat2l: 'takip edilen eklem', vrpStat3l: 'kamera görüşü', vrpStat4l: 'tensor-core çıkarımı',
+      vrpDemoH: 'Fikrin animasyonu',
+      vrpDemoCap: 'Etkileşimli şema — döndürmek için sürükleyin. Her kamera, vurgulanan ekleme bir yön ışını gönderir; ışınların kesişmeye en yaklaştığı nokta üçgenlenmiş konumdur. Gövde bir kameranın görüşünü kapattığında o ışın soluklaşır, güveni düşer ve birleşik kestirim diğer görüşe yaslanır.',
+      vrpWhyH: 'Neden',
+      vrpWhy: "SteamVR yalnızca başınızı ve ellerinizi takip eder; oyunlar gerisini tahmin eder — kötü tahmin eder. Özel takipçiler çalışıyor ama maliyet hızla katlanıyor; tek kameralı webcam çözümleri ise siz arkanızı döner dönmez eklemleri oklüzyona ve ölü bölgelere kaptırıyor. Oyun alanına farklı açılardan bakan iki kamera bu kör noktaların çoğunu ortadan kaldırıyor — yeter ki VR'a yetişecek hızda üçgenleme yapabilin.",
+      vrpHowH: 'Nasıl çalışıyor',
+      vrpStep1k: 'kalibrasyon', vrpStep1t: ' — Tek seferlik OpenCV kalibrasyonu her kameranın dışsal (extrinsic) pozunu çıkarıyor; sabit bir düzen için sonuç kaydediliyor ve bir daha tekrarlanmıyor.',
+      vrpStep2k: 'kestirim', vrpStep2t: " — Her görüntü akışı, RTX 3080 üzerinde Tensor Core hızlandırmalı çıkarımla poz kestirimi çalıştırıyor; uçtan uca gecikme 16 ms'nin altında kalıyor.",
+      vrpStep3k: 'üçgenleme', vrpStep3t: ' — 17 eklem, iki kameranın kestirimlerinin üçgenlenmesiyle 3B olarak yeniden kuruluyor.',
+      vrpStep4k: 'füzyon', vrpStep4t: ' — Kestirimler güven ağırlıklarıyla birleştiriliyor; görüşü kapanan ya da sırtı dönük bir eklem aniden sıçramak yerine yumuşakça toparlanıyor.',
+      vrpStep5k: 'entegrasyon', vrpStep5t: " — Sonuç, SteamVR'ın zaten tanıdığı SlimeVR'a besleniyor; mevcut oyunlar standart takipçi görüyor.",
+      vrpStatus: "Kod henüz açık değil — yayına hazırlanıyor; GitHub'a düştüğünde projeler sayfasında kendiliğinden görünecek.",
       footerLoc: 'İstanbul · UTC+3',
       months: ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara']
     }
@@ -230,8 +263,10 @@
     row.className = 'repo-row' + (url ? '' : ' repo-row-static');
     if (url) {
       row.href = url;
-      row.target = '_blank';
-      row.rel = 'noopener';
+      if (!entry.internal) {
+        row.target = '_blank';
+        row.rel = 'noopener';
+      }
     }
 
     var line1 = document.createElement('div');
@@ -241,7 +276,9 @@
     name.textContent = isCatalog ? entry.id : entry.name;
     var meta = document.createElement('span');
     meta.className = 'repo-meta';
-    meta.textContent = isCatalog ? (entry.meta[state.lang] || entry.meta.en) : formatRepoMeta(entry, t);
+    var metaText = isCatalog ? (entry.meta[state.lang] || entry.meta.en) : formatRepoMeta(entry, t);
+    if (entry.writeup) metaText += ' · ' + t.writeupLabel;
+    meta.textContent = metaText;
     line1.appendChild(name);
     line1.appendChild(meta);
 
@@ -316,7 +353,8 @@
   function render() {
     var t = strings[state.lang] || strings.en;
 
-    document.title = t[TITLE_KEYS[page]] || t.titleHome;
+    var titleKey = document.body.getAttribute('data-title') || TITLE_KEYS[page];
+    document.title = t[titleKey] || t.titleHome;
 
     var nodes = document.querySelectorAll('[data-i18n]');
     for (var i = 0; i < nodes.length; i++) {
@@ -339,6 +377,9 @@
 
     if (page === 'home') renderFeatured(t);
     if (page === 'projects') renderProjectsPage(t);
+
+    // let page-local scripts (e.g. the case-study demo) react to lang/theme changes
+    try { document.dispatchEvent(new CustomEvent('omt:render')); } catch (e) {}
   }
 
   function fetchRepos() {
