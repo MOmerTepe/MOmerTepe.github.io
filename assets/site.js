@@ -4,7 +4,8 @@
   var GITHUB_USERNAME = 'MOmerTepe';
   // Forks are normally hidden; these are shown, mapped to their upstream repo.
   var INCLUDED_FORKS = { deathbymedia: 'EmreSonal/DeathByMedia' };
-  // GitHub repo name (lowercase) -> category. Repos not listed here land in "other".
+  // GitHub repo name (lowercase) -> sub-category under "Personal projects".
+  // Repos not listed here land in "other"; GitHub repos are always personal.
   var REPO_CATEGORIES = {
     openteslacam: 'tools',
     deathbymedia: 'tools'
@@ -14,8 +15,8 @@
     openteslacam: '/projects/openteslacam/',
     deathbymedia: '/projects/deathbymedia/'
   };
-  var CATEGORY_ORDER = ['cvml', 'hw', 'tools', 'other'];
-  var CATEGORY_KEYS = { cvml: 'catCvml', hw: 'catHw', tools: 'catTools', other: 'catOther' };
+  var SUBCAT_ORDER = ['cvml', 'tools', 'other'];
+  var SUBCAT_KEYS = { cvml: 'catCvml', tools: 'catTools', other: 'catOther' };
   var REPO_CACHE_KEY = 'omt-repos-v1';
   var REPO_CACHE_TTL = 10 * 60 * 1000;
 
@@ -50,7 +51,7 @@
     },
     {
       id: 'diabetes-prediction',
-      cat: 'cvml',
+      group: 'uni',
       sortYear: 2024,
       meta: { en: '2024 · Python · scikit-learn', tr: '2024 · Python · scikit-learn' },
       desc: {
@@ -60,7 +61,7 @@
     },
     {
       id: 'led-boost-converter',
-      cat: 'hw',
+      group: 'uni',
       sortYear: 2025,
       meta: { en: '2025 · ATtiny85 · LTspice', tr: '2025 · ATtiny85 · LTspice' },
       desc: {
@@ -70,7 +71,7 @@
     },
     {
       id: 'xbox-controller-poc',
-      cat: 'hw',
+      group: 'uni',
       sortYear: 2022,
       meta: { en: '2022 · C · Arduino', tr: '2022 · C · Arduino' },
       desc: {
@@ -92,11 +93,24 @@
     }
   };
 
-  // Curated rows for the home page (no API call needed there).
+  var DEATHBYMEDIA_STATIC = {
+    id: 'DeathByMedia',
+    url: '/projects/deathbymedia/',
+    internal: true,
+    writeup: true,
+    meta: { en: 'Svelte · fork', tr: 'Svelte · fork' },
+    desc: {
+      en: "My branch of a friend's all-in-one media toolbox — image, video and audio conversion plus a YouTube downloader, all through one queue.",
+      tr: 'Bir arkadaşımın hepsi bir arada medya araç kutusunun benim sürümüm — görüntü, video ve ses dönüştürme, artı bir YouTube indirici; hepsi tek kuyruktan.'
+    }
+  };
+
+  // Curated rows for the home page (no API call needed there);
+  // only projects with a case-study page belong here.
   var FEATURED = [
     OPENTESLACAM_STATIC,
     findLocal('vr-fullbody-tracking'),
-    findLocal('led-boost-converter')
+    DEATHBYMEDIA_STATIC
   ];
 
   var strings = {
@@ -117,8 +131,9 @@
       allProjects: 'all projects →',
       projectsH: 'Projects',
       projectsIntro: 'Everything in one place, grouped by what it is. Published work links to GitHub and updates automatically; unlinked entries are still being cleaned up for release.',
+      groupPersonal: 'Personal projects',
+      groupUni: 'University projects',
       catCvml: 'Machine learning & computer vision',
-      catHw: 'Hardware & embedded',
       catTools: 'Apps & tools',
       catOther: 'Other',
       fetching: 'fetching repositories…',
@@ -133,7 +148,6 @@
       resumeLede: 'The same resume I send out — read it here or take the PDF with you.',
       resumeDownloadBtn: 'download pdf ↓',
       resumeOpenBtn: 'open in new tab ↗',
-      resumeFallback: "Your browser can't display PDFs inline — use the download link above.",
       nfMsg: "This page doesn't exist. Maybe it moved; maybe it never did.",
       backHome: 'back to home →',
       writeupLabel: 'writeup →',
@@ -202,8 +216,9 @@
       allProjects: 'tüm projeler →',
       projectsH: 'Projeler',
       projectsIntro: "Hepsi bir arada, türüne göre gruplu. Yayınlananlar GitHub'a bağlanıyor ve kendiliğinden güncelleniyor; bağlantısı olmayanlar hâlâ yayına hazırlanıyor.",
+      groupPersonal: 'Kişisel projeler',
+      groupUni: 'Üniversite projeleri',
       catCvml: 'Makine öğrenmesi & bilgisayarlı görü',
-      catHw: 'Donanım & gömülü sistemler',
       catTools: 'Uygulamalar & araçlar',
       catOther: 'Diğer',
       fetching: 'depolar getiriliyor…',
@@ -218,7 +233,6 @@
       resumeLede: 'Gönderdiğim özgeçmişin birebir aynısı — burada okuyun ya da PDF olarak indirin.',
       resumeDownloadBtn: 'pdf indir ↓',
       resumeOpenBtn: 'yeni sekmede aç ↗',
-      resumeFallback: "Tarayıcınız PDF'i sayfa içinde gösteremiyor — yukarıdaki indirme bağlantısını kullanın.",
       nfMsg: 'Böyle bir sayfa yok. Belki taşındı, belki hiç olmadı.',
       backHome: 'ana sayfaya dön →',
       writeupLabel: 'detaylar →',
@@ -399,30 +413,55 @@
 
     if (state.reposLoading) return;
 
-    var groups = { cvml: [], hw: [], tools: [], other: [] };
+    var personal = { cvml: [], tools: [], other: [] };
+    var uni = [];
     LOCAL_PROJECTS.forEach(function (p) {
-      groups[p.cat].push({ ts: Date.UTC(p.sortYear, 6, 1), entry: p });
+      var item = { ts: Date.UTC(p.sortYear, 6, 1), entry: p };
+      if (p.group === 'uni') uni.push(item);
+      else personal[p.cat].push(item);
     });
     (state.repos || []).forEach(function (r) {
       var cat = REPO_CATEGORIES[r.name.toLowerCase()] || 'other';
-      groups[cat].push({ ts: r.pushedAt ? Date.parse(r.pushedAt) : 0, entry: r });
+      personal[cat].push({ ts: r.pushedAt ? Date.parse(r.pushedAt) : 0, entry: r });
     });
 
-    body.textContent = '';
-    CATEGORY_ORDER.forEach(function (cat) {
-      var items = groups[cat];
-      if (!items.length) return;
-      items.sort(function (a, b) { return b.ts - a.ts; });
-
+    function byTsDesc(a, b) { return b.ts - a.ts; }
+    function toEntries(items) {
+      items.sort(byTsDesc);
+      return items.map(function (i) { return i.entry; });
+    }
+    function groupBlock(title) {
       var block = document.createElement('div');
       block.className = 'cat-block';
       var h = document.createElement('h3');
       h.className = 'section-h cat-h';
-      h.textContent = t[CATEGORY_KEYS[cat]];
+      h.textContent = title;
       block.appendChild(h);
-      block.appendChild(buildList(items.map(function (i) { return i.entry; }), t));
-      body.appendChild(block);
+      return block;
+    }
+
+    body.textContent = '';
+
+    var personalBlock = groupBlock(t.groupPersonal);
+    SUBCAT_ORDER.forEach(function (cat) {
+      var items = personal[cat];
+      if (!items.length) return;
+      var sub = document.createElement('div');
+      sub.className = 'subcat-block';
+      var sh = document.createElement('h4');
+      sh.className = 'subcat-h';
+      sh.textContent = t[SUBCAT_KEYS[cat]];
+      sub.appendChild(sh);
+      sub.appendChild(buildList(toEntries(items), t));
+      personalBlock.appendChild(sub);
     });
+    body.appendChild(personalBlock);
+
+    if (uni.length) {
+      var uniBlock = groupBlock(t.groupUni);
+      uniBlock.appendChild(buildList(toEntries(uni), t));
+      body.appendChild(uniBlock);
+    }
   }
 
   function render() {

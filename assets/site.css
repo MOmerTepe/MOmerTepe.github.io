@@ -188,6 +188,17 @@ a.repo-row:hover { background: light-dark(#f5f5f1, #1b1b19); }
 .cat-block { margin-top: 36px; }
 .cat-block:first-child { margin-top: 24px; }
 .cat-h { margin-bottom: 6px; }
+.subcat-block { margin-top: 22px; }
+.subcat-block:first-of-type { margin-top: 12px; }
+.subcat-h {
+  margin: 0 0 2px 0;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: light-dark(#a3a39b, #6b6b64);
+}
 
 /* Contact */
 .contact { margin-top: 52px; }
@@ -221,21 +232,23 @@ a.repo-row:hover { background: light-dark(#f5f5f1, #1b1b19); }
   font-family: 'IBM Plex Mono', monospace;
   font-size: 12.5px;
 }
+.resume-size {
+  align-self: center;
+  font-size: 11px;
+  color: light-dark(#a3a39b, #6b6b64);
+}
 .resume-embed {
   margin-top: 24px;
   border: 1px solid light-dark(#e7e7e1, #2a2a27);
 }
-.resume-embed object {
+.resume-embed img {
   display: block;
   width: 100%;
-  height: min(78vh, 940px);
+  height: auto;
+  background: #fff;
 }
-.resume-fallback {
-  margin: 0;
-  padding: 24px;
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 12.5px;
-  color: light-dark(#8a8a82, #7d7d76);
+.resume-embed.dark-adapt img {
+  filter: invert(0.93) hue-rotate(180deg);
 }
 
 /* Case study page */
