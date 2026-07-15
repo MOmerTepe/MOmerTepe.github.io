@@ -4,7 +4,8 @@
   var GITHUB_USERNAME = 'MOmerTepe';
   // Forks are normally hidden; these are shown, mapped to their upstream repo.
   var INCLUDED_FORKS = { deathbymedia: 'EmreSonal/DeathByMedia' };
-  // GitHub repo name (lowercase) -> category. Repos not listed here land in "other".
+  // GitHub repo name (lowercase) -> sub-category under "Personal projects".
+  // Repos not listed here land in "other"; GitHub repos are always personal.
   var REPO_CATEGORIES = {
     openteslacam: 'tools',
     deathbymedia: 'tools'
@@ -14,10 +15,13 @@
     openteslacam: '/projects/openteslacam/',
     deathbymedia: '/projects/deathbymedia/'
   };
-  var CATEGORY_ORDER = ['cvml', 'hw', 'tools', 'other'];
-  var CATEGORY_KEYS = { cvml: 'catCvml', hw: 'catHw', tools: 'catTools', other: 'catOther' };
+  var SUBCAT_ORDER = ['cvml', 'tools', 'other'];
+  var SUBCAT_KEYS = { cvml: 'catCvml', tools: 'catTools', other: 'catOther' };
   var REPO_CACHE_KEY = 'omt-repos-v1';
   var REPO_CACHE_TTL = 10 * 60 * 1000;
+  var CONSENT_KEY = 'omt-consent-v1';
+  var ANALYTICS_SRC = 'https://gc.zgo.at/count.js';
+  var ANALYTICS_ENDPOINT = 'https://omertepe.goatcounter.com/count';
 
   // Projects not (yet) published on GitHub. Rendered from this catalog;
   // once one gets a repo, delete it here and add its name to REPO_CATEGORIES.
@@ -50,7 +54,7 @@
     },
     {
       id: 'diabetes-prediction',
-      cat: 'cvml',
+      group: 'uni',
       sortYear: 2024,
       meta: { en: '2024 · Python · scikit-learn', tr: '2024 · Python · scikit-learn' },
       desc: {
@@ -60,7 +64,7 @@
     },
     {
       id: 'led-boost-converter',
-      cat: 'hw',
+      group: 'uni',
       sortYear: 2025,
       meta: { en: '2025 · ATtiny85 · LTspice', tr: '2025 · ATtiny85 · LTspice' },
       desc: {
@@ -70,7 +74,7 @@
     },
     {
       id: 'xbox-controller-poc',
-      cat: 'hw',
+      group: 'uni',
       sortYear: 2022,
       meta: { en: '2022 · C · Arduino', tr: '2022 · C · Arduino' },
       desc: {
@@ -92,11 +96,24 @@
     }
   };
 
-  // Curated rows for the home page (no API call needed there).
+  var DEATHBYMEDIA_STATIC = {
+    id: 'DeathByMedia',
+    url: '/projects/deathbymedia/',
+    internal: true,
+    writeup: true,
+    meta: { en: 'Svelte · fork', tr: 'Svelte · fork' },
+    desc: {
+      en: "My branch of a friend's all-in-one media toolbox — image, video and audio conversion plus a YouTube downloader, all through one queue.",
+      tr: 'Bir arkadaşımın hepsi bir arada medya araç kutusunun benim sürümüm — görüntü, video ve ses dönüştürme, artı bir YouTube indirici; hepsi tek kuyruktan.'
+    }
+  };
+
+  // Curated rows for the home page (no API call needed there);
+  // only projects with a case-study page belong here.
   var FEATURED = [
     OPENTESLACAM_STATIC,
     findLocal('vr-fullbody-tracking'),
-    findLocal('led-boost-converter')
+    DEATHBYMEDIA_STATIC
   ];
 
   var strings = {
@@ -117,8 +134,9 @@
       allProjects: 'all projects →',
       projectsH: 'Projects',
       projectsIntro: 'Everything in one place, grouped by what it is. Published work links to GitHub and updates automatically; unlinked entries are still being cleaned up for release.',
+      groupPersonal: 'Personal projects',
+      groupUni: 'University projects',
       catCvml: 'Machine learning & computer vision',
-      catHw: 'Hardware & embedded',
       catTools: 'Apps & tools',
       catOther: 'Other',
       fetching: 'fetching repositories…',
@@ -133,7 +151,6 @@
       resumeLede: 'The same resume I send out — read it here or take the PDF with you.',
       resumeDownloadBtn: 'download pdf ↓',
       resumeOpenBtn: 'open in new tab ↗',
-      resumeFallback: "Your browser can't display PDFs inline — use the download link above.",
       nfMsg: "This page doesn't exist. Maybe it moved; maybe it never did.",
       backHome: 'back to home →',
       writeupLabel: 'writeup →',
@@ -182,6 +199,13 @@
       qtsStep3k: 'orchestrate', qtsStep3t: " — A fine-tuned model weighs each layer's output and confidence into a single suggestion; dedicated sub-agents add macroeconomic context.",
       qtsStep4k: 'paper', qtsStep4t: " — Suggestions land in a paper-trading terminal for evaluation. It never executes real trades — it's research tooling, not an autotrader.",
       qtsStatus: 'In progress, targeted for early 2027; the interface is a moving target and will keep changing. Suggestions only, never executes trades — and nothing here is financial advice.',
+      consentText: 'No ads, no tracking cookies, nothing sold. Theme and language choices live only on this device. Optional analytics count visits anonymously and without cookies — country, referrer, page — because I like knowing where visitors come from.',
+      consentEssential: 'essential — theme & language, kept on this device (always on)',
+      consentAnalytics: 'analytics — anonymous, cookieless visit counts (GoatCounter)',
+      consentAllowAll: 'allow all',
+      consentEssentialOnly: 'essential only',
+      consentSave: 'save choices',
+      privacyLink: 'privacy',
       footerLoc: 'Istanbul · UTC+3',
       months: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
     },
@@ -202,8 +226,9 @@
       allProjects: 'tüm projeler →',
       projectsH: 'Projeler',
       projectsIntro: "Hepsi bir arada, türüne göre gruplu. Yayınlananlar GitHub'a bağlanıyor ve kendiliğinden güncelleniyor; bağlantısı olmayanlar hâlâ yayına hazırlanıyor.",
+      groupPersonal: 'Kişisel projeler',
+      groupUni: 'Üniversite projeleri',
       catCvml: 'Makine öğrenmesi & bilgisayarlı görü',
-      catHw: 'Donanım & gömülü sistemler',
       catTools: 'Uygulamalar & araçlar',
       catOther: 'Diğer',
       fetching: 'depolar getiriliyor…',
@@ -218,7 +243,6 @@
       resumeLede: 'Gönderdiğim özgeçmişin birebir aynısı — burada okuyun ya da PDF olarak indirin.',
       resumeDownloadBtn: 'pdf indir ↓',
       resumeOpenBtn: 'yeni sekmede aç ↗',
-      resumeFallback: "Tarayıcınız PDF'i sayfa içinde gösteremiyor — yukarıdaki indirme bağlantısını kullanın.",
       nfMsg: 'Böyle bir sayfa yok. Belki taşındı, belki hiç olmadı.',
       backHome: 'ana sayfaya dön →',
       writeupLabel: 'detaylar →',
@@ -267,6 +291,13 @@
       qtsStep3k: 'orkestrasyon', qtsStep3t: ' — İnce ayarlı bir model, katman çıktılarını ve güvenlerini tek bir öneride tartıyor; özel alt-ajanlar makroekonomik bağlam ekliyor.',
       qtsStep4k: 'paper', qtsStep4t: ' — Öneriler değerlendirme için paper işlem terminaline düşüyor. Gerçek işlem asla yapılmıyor — bu bir araştırma aracı, otomatik alım-satım botu değil.',
       qtsStatus: 'Devam ediyor, hedef 2027 başı; arayüz hareketli bir hedef, değişmeye devam edecek. Yalnızca öneri üretir, asla işlem yapmaz — ve buradaki hiçbir şey yatırım tavsiyesi değildir.',
+      consentText: 'Reklam yok, takip çerezi yok, hiçbir şey satılmıyor. Tema ve dil tercihleri yalnızca bu cihazda tutuluyor. İsteğe bağlı analitik, ziyaretleri anonim ve çerezsiz sayıyor — ülke, kaynak, sayfa — çünkü ziyaretçilerin nereden geldiğini bilmeyi seviyorum.',
+      consentEssential: 'gerekli — tema ve dil, bu cihazda (her zaman açık)',
+      consentAnalytics: 'analitik — anonim, çerezsiz ziyaret sayımı (GoatCounter)',
+      consentAllowAll: 'tümüne izin ver',
+      consentEssentialOnly: 'yalnızca gerekli',
+      consentSave: 'seçimleri kaydet',
+      privacyLink: 'gizlilik',
       footerLoc: 'İstanbul · UTC+3',
       months: ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara']
     }
@@ -399,30 +430,55 @@
 
     if (state.reposLoading) return;
 
-    var groups = { cvml: [], hw: [], tools: [], other: [] };
+    var personal = { cvml: [], tools: [], other: [] };
+    var uni = [];
     LOCAL_PROJECTS.forEach(function (p) {
-      groups[p.cat].push({ ts: Date.UTC(p.sortYear, 6, 1), entry: p });
+      var item = { ts: Date.UTC(p.sortYear, 6, 1), entry: p };
+      if (p.group === 'uni') uni.push(item);
+      else personal[p.cat].push(item);
     });
     (state.repos || []).forEach(function (r) {
       var cat = REPO_CATEGORIES[r.name.toLowerCase()] || 'other';
-      groups[cat].push({ ts: r.pushedAt ? Date.parse(r.pushedAt) : 0, entry: r });
+      personal[cat].push({ ts: r.pushedAt ? Date.parse(r.pushedAt) : 0, entry: r });
     });
 
-    body.textContent = '';
-    CATEGORY_ORDER.forEach(function (cat) {
-      var items = groups[cat];
-      if (!items.length) return;
-      items.sort(function (a, b) { return b.ts - a.ts; });
-
+    function byTsDesc(a, b) { return b.ts - a.ts; }
+    function toEntries(items) {
+      items.sort(byTsDesc);
+      return items.map(function (i) { return i.entry; });
+    }
+    function groupBlock(title) {
       var block = document.createElement('div');
       block.className = 'cat-block';
       var h = document.createElement('h3');
       h.className = 'section-h cat-h';
-      h.textContent = t[CATEGORY_KEYS[cat]];
+      h.textContent = title;
       block.appendChild(h);
-      block.appendChild(buildList(items.map(function (i) { return i.entry; }), t));
-      body.appendChild(block);
+      return block;
+    }
+
+    body.textContent = '';
+
+    var personalBlock = groupBlock(t.groupPersonal);
+    SUBCAT_ORDER.forEach(function (cat) {
+      var items = personal[cat];
+      if (!items.length) return;
+      var sub = document.createElement('div');
+      sub.className = 'subcat-block';
+      var sh = document.createElement('h4');
+      sh.className = 'subcat-h';
+      sh.textContent = t[SUBCAT_KEYS[cat]];
+      sub.appendChild(sh);
+      sub.appendChild(buildList(toEntries(items), t));
+      personalBlock.appendChild(sub);
     });
+    body.appendChild(personalBlock);
+
+    if (uni.length) {
+      var uniBlock = groupBlock(t.groupUni);
+      uniBlock.appendChild(buildList(toEntries(uni), t));
+      body.appendChild(uniBlock);
+    }
   }
 
   function render() {
@@ -518,6 +574,137 @@
       });
   }
 
+  // ---- privacy: consent banner, opt-in analytics, email assembly ----
+  // Analytics = GoatCounter: anonymous, cookieless visit counts. It only
+  // loads after the visitor allows it; the choice is kept in localStorage
+  // and can be changed any time via the "privacy" link in the footer.
+
+  function getConsent() {
+    try {
+      var raw = localStorage.getItem(CONSENT_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) { return null; }
+  }
+
+  function saveConsent(analytics) {
+    try { localStorage.setItem(CONSENT_KEY, JSON.stringify({ analytics: !!analytics, t: Date.now() })); } catch (e) {}
+  }
+
+  function defaultAnalyticsChoice() {
+    // honor Global Privacy Control / Do Not Track in the pre-checked default
+    var optedOut = navigator.globalPrivacyControl === true || navigator.doNotTrack === '1';
+    return !optedOut;
+  }
+
+  function loadAnalytics() {
+    if (document.querySelector('script[data-goatcounter]')) return;
+    var s = document.createElement('script');
+    s.async = true;
+    s.src = ANALYTICS_SRC;
+    s.setAttribute('data-goatcounter', ANALYTICS_ENDPOINT);
+    document.head.appendChild(s);
+  }
+
+  function padForConsent() {
+    var el = $('consent');
+    document.body.style.paddingBottom = el ? el.offsetHeight + 'px' : '';
+  }
+
+  function hideConsent() {
+    var el = $('consent');
+    if (el) el.parentNode.removeChild(el);
+    padForConsent();
+  }
+
+  function applyConsent(analytics) {
+    saveConsent(analytics);
+    if (analytics) loadAnalytics();
+    hideConsent();
+  }
+
+  function showConsent(prefillAnalytics) {
+    hideConsent();
+    var wrap = document.createElement('div');
+    wrap.className = 'consent';
+    wrap.id = 'consent';
+    wrap.setAttribute('role', 'region');
+    wrap.setAttribute('aria-label', 'Privacy choices');
+
+    var inner = document.createElement('div');
+    inner.className = 'consent-inner';
+
+    var text = document.createElement('p');
+    text.className = 'consent-text';
+    text.setAttribute('data-i18n', 'consentText');
+    inner.appendChild(text);
+
+    var opts = document.createElement('div');
+    opts.className = 'consent-opts';
+    function opt(key, checked, disabled, id) {
+      var label = document.createElement('label');
+      label.className = 'consent-opt';
+      var box = document.createElement('input');
+      box.type = 'checkbox';
+      box.checked = checked;
+      box.disabled = !!disabled;
+      if (id) box.id = id;
+      var span = document.createElement('span');
+      span.setAttribute('data-i18n', key);
+      label.appendChild(box);
+      label.appendChild(span);
+      opts.appendChild(label);
+    }
+    opt('consentEssential', true, true, null);
+    opt('consentAnalytics', prefillAnalytics, false, 'consent-analytics');
+    inner.appendChild(opts);
+
+    var actions = document.createElement('div');
+    actions.className = 'consent-actions';
+    function action(key, fn) {
+      var b = document.createElement('button');
+      b.setAttribute('data-i18n', key);
+      b.addEventListener('click', fn);
+      actions.appendChild(b);
+    }
+    action('consentAllowAll', function () { applyConsent(true); });
+    action('consentEssentialOnly', function () { applyConsent(false); });
+    action('consentSave', function () { applyConsent($('consent-analytics').checked); });
+    inner.appendChild(actions);
+
+    wrap.appendChild(inner);
+    document.body.appendChild(wrap);
+    render();
+    padForConsent();
+  }
+
+  function initPrivacy() {
+    // assemble the contact email at runtime so plain-HTML harvesters miss it
+    var email = $('email-link');
+    if (email) {
+      var addr = email.getAttribute('data-u') + '@' + email.getAttribute('data-d');
+      email.href = 'mailto:' + addr;
+      email.textContent = addr;
+    }
+
+    var footer = document.querySelector('footer');
+    if (footer) {
+      var link = document.createElement('button');
+      link.className = 'privacy-link';
+      link.setAttribute('data-i18n', 'privacyLink');
+      link.addEventListener('click', function () {
+        var c = getConsent();
+        showConsent(c ? !!c.analytics : defaultAnalyticsChoice());
+      });
+      footer.insertBefore(link, footer.lastElementChild);
+    }
+
+    var consent = getConsent();
+    if (consent === null) showConsent(defaultAnalyticsChoice());
+    else if (consent.analytics) loadAnalytics();
+  }
+
+  window.addEventListener('resize', padForConsent);
+
   // Init
   var savedTheme = null;
   try { savedTheme = localStorage.getItem('omt-theme'); } catch (e) {}
@@ -539,5 +726,6 @@
   $('theme-dark').addEventListener('click', function () { setTheme('dark'); });
 
   render();
+  initPrivacy();
   if (page === 'projects') fetchRepos();
 })();
