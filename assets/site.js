@@ -19,6 +19,9 @@
   var SUBCAT_KEYS = { cvml: 'catCvml', tools: 'catTools', other: 'catOther' };
   var REPO_CACHE_KEY = 'omt-repos-v1';
   var REPO_CACHE_TTL = 10 * 60 * 1000;
+  var CONSENT_KEY = 'omt-consent-v1';
+  var ANALYTICS_SRC = 'https://gc.zgo.at/count.js';
+  var ANALYTICS_ENDPOINT = 'https://omertepe.goatcounter.com/count';
 
   // Projects not (yet) published on GitHub. Rendered from this catalog;
   // once one gets a repo, delete it here and add its name to REPO_CATEGORIES.
@@ -196,6 +199,13 @@
       qtsStep3k: 'orchestrate', qtsStep3t: " — A fine-tuned model weighs each layer's output and confidence into a single suggestion; dedicated sub-agents add macroeconomic context.",
       qtsStep4k: 'paper', qtsStep4t: " — Suggestions land in a paper-trading terminal for evaluation. It never executes real trades — it's research tooling, not an autotrader.",
       qtsStatus: 'In progress, targeted for early 2027; the interface is a moving target and will keep changing. Suggestions only, never executes trades — and nothing here is financial advice.',
+      consentText: 'No ads, no tracking cookies, nothing sold. Theme and language choices live only on this device. Optional analytics count visits anonymously and without cookies — country, referrer, page — because I like knowing where visitors come from.',
+      consentEssential: 'essential — theme & language, kept on this device (always on)',
+      consentAnalytics: 'analytics — anonymous, cookieless visit counts (GoatCounter)',
+      consentAllowAll: 'allow all',
+      consentEssentialOnly: 'essential only',
+      consentSave: 'save choices',
+      privacyLink: 'privacy',
       footerLoc: 'Istanbul · UTC+3',
       months: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
     },
@@ -281,6 +291,13 @@
       qtsStep3k: 'orkestrasyon', qtsStep3t: ' — İnce ayarlı bir model, katman çıktılarını ve güvenlerini tek bir öneride tartıyor; özel alt-ajanlar makroekonomik bağlam ekliyor.',
       qtsStep4k: 'paper', qtsStep4t: ' — Öneriler değerlendirme için paper işlem terminaline düşüyor. Gerçek işlem asla yapılmıyor — bu bir araştırma aracı, otomatik alım-satım botu değil.',
       qtsStatus: 'Devam ediyor, hedef 2027 başı; arayüz hareketli bir hedef, değişmeye devam edecek. Yalnızca öneri üretir, asla işlem yapmaz — ve buradaki hiçbir şey yatırım tavsiyesi değildir.',
+      consentText: 'Reklam yok, takip çerezi yok, hiçbir şey satılmıyor. Tema ve dil tercihleri yalnızca bu cihazda tutuluyor. İsteğe bağlı analitik, ziyaretleri anonim ve çerezsiz sayıyor — ülke, kaynak, sayfa — çünkü ziyaretçilerin nereden geldiğini bilmeyi seviyorum.',
+      consentEssential: 'gerekli — tema ve dil, bu cihazda (her zaman açık)',
+      consentAnalytics: 'analitik — anonim, çerezsiz ziyaret sayımı (GoatCounter)',
+      consentAllowAll: 'tümüne izin ver',
+      consentEssentialOnly: 'yalnızca gerekli',
+      consentSave: 'seçimleri kaydet',
+      privacyLink: 'gizlilik',
       footerLoc: 'İstanbul · UTC+3',
       months: ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara']
     }
@@ -557,6 +574,137 @@
       });
   }
 
+  // ---- privacy: consent banner, opt-in analytics, email assembly ----
+  // Analytics = GoatCounter: anonymous, cookieless visit counts. It only
+  // loads after the visitor allows it; the choice is kept in localStorage
+  // and can be changed any time via the "privacy" link in the footer.
+
+  function getConsent() {
+    try {
+      var raw = localStorage.getItem(CONSENT_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) { return null; }
+  }
+
+  function saveConsent(analytics) {
+    try { localStorage.setItem(CONSENT_KEY, JSON.stringify({ analytics: !!analytics, t: Date.now() })); } catch (e) {}
+  }
+
+  function defaultAnalyticsChoice() {
+    // honor Global Privacy Control / Do Not Track in the pre-checked default
+    var optedOut = navigator.globalPrivacyControl === true || navigator.doNotTrack === '1';
+    return !optedOut;
+  }
+
+  function loadAnalytics() {
+    if (document.querySelector('script[data-goatcounter]')) return;
+    var s = document.createElement('script');
+    s.async = true;
+    s.src = ANALYTICS_SRC;
+    s.setAttribute('data-goatcounter', ANALYTICS_ENDPOINT);
+    document.head.appendChild(s);
+  }
+
+  function padForConsent() {
+    var el = $('consent');
+    document.body.style.paddingBottom = el ? el.offsetHeight + 'px' : '';
+  }
+
+  function hideConsent() {
+    var el = $('consent');
+    if (el) el.parentNode.removeChild(el);
+    padForConsent();
+  }
+
+  function applyConsent(analytics) {
+    saveConsent(analytics);
+    if (analytics) loadAnalytics();
+    hideConsent();
+  }
+
+  function showConsent(prefillAnalytics) {
+    hideConsent();
+    var wrap = document.createElement('div');
+    wrap.className = 'consent';
+    wrap.id = 'consent';
+    wrap.setAttribute('role', 'region');
+    wrap.setAttribute('aria-label', 'Privacy choices');
+
+    var inner = document.createElement('div');
+    inner.className = 'consent-inner';
+
+    var text = document.createElement('p');
+    text.className = 'consent-text';
+    text.setAttribute('data-i18n', 'consentText');
+    inner.appendChild(text);
+
+    var opts = document.createElement('div');
+    opts.className = 'consent-opts';
+    function opt(key, checked, disabled, id) {
+      var label = document.createElement('label');
+      label.className = 'consent-opt';
+      var box = document.createElement('input');
+      box.type = 'checkbox';
+      box.checked = checked;
+      box.disabled = !!disabled;
+      if (id) box.id = id;
+      var span = document.createElement('span');
+      span.setAttribute('data-i18n', key);
+      label.appendChild(box);
+      label.appendChild(span);
+      opts.appendChild(label);
+    }
+    opt('consentEssential', true, true, null);
+    opt('consentAnalytics', prefillAnalytics, false, 'consent-analytics');
+    inner.appendChild(opts);
+
+    var actions = document.createElement('div');
+    actions.className = 'consent-actions';
+    function action(key, fn) {
+      var b = document.createElement('button');
+      b.setAttribute('data-i18n', key);
+      b.addEventListener('click', fn);
+      actions.appendChild(b);
+    }
+    action('consentAllowAll', function () { applyConsent(true); });
+    action('consentEssentialOnly', function () { applyConsent(false); });
+    action('consentSave', function () { applyConsent($('consent-analytics').checked); });
+    inner.appendChild(actions);
+
+    wrap.appendChild(inner);
+    document.body.appendChild(wrap);
+    render();
+    padForConsent();
+  }
+
+  function initPrivacy() {
+    // assemble the contact email at runtime so plain-HTML harvesters miss it
+    var email = $('email-link');
+    if (email) {
+      var addr = email.getAttribute('data-u') + '@' + email.getAttribute('data-d');
+      email.href = 'mailto:' + addr;
+      email.textContent = addr;
+    }
+
+    var footer = document.querySelector('footer');
+    if (footer) {
+      var link = document.createElement('button');
+      link.className = 'privacy-link';
+      link.setAttribute('data-i18n', 'privacyLink');
+      link.addEventListener('click', function () {
+        var c = getConsent();
+        showConsent(c ? !!c.analytics : defaultAnalyticsChoice());
+      });
+      footer.insertBefore(link, footer.lastElementChild);
+    }
+
+    var consent = getConsent();
+    if (consent === null) showConsent(defaultAnalyticsChoice());
+    else if (consent.analytics) loadAnalytics();
+  }
+
+  window.addEventListener('resize', padForConsent);
+
   // Init
   var savedTheme = null;
   try { savedTheme = localStorage.getItem('omt-theme'); } catch (e) {}
@@ -578,5 +726,6 @@
   $('theme-dark').addEventListener('click', function () { setTheme('dark'); });
 
   render();
+  initPrivacy();
   if (page === 'projects') fetchRepos();
 })();
