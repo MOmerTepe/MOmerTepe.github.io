@@ -1,6 +1,7 @@
-import { BOARD, GROUPS, OWNABLE_TYPES } from './board.js';
+import { BOARD, GROUPS, OWNABLE_TYPES } from './board.js?v=20261006-4';
+import { DEFAULT_RULES, normalizeRules } from './rules.js?v=20261006-4';
+import { PLAYER_COLORS, TOKEN_OPTIONS, sanitizeProfile } from './cosmetics.js?v=20261006-4';
 
-const COLORS = ['#f0ae72','#8dbca8','#88a7db','#d998c1','#d6c474','#ab98d5'];
 const check = (condition,message) => { if (!condition) throw new Error(message); };
 const byId = (state,id) => state.players.find(player => player.id === id);
 const current = state => state.players[state.turn];
@@ -27,37 +28,40 @@ function randomCard(rng,length) {
 
 export function createGame(players,options={}) {
   check(Array.isArray(players) && players.length >= 2 && players.length <= 6,'A game needs 2–6 players.');
+  const settings = normalizeRules(options);
   const ids = new Set();
   const roster = players.map((player,index) => {
     check(player && typeof player.id === 'string' && player.id.length > 0 && !ids.has(player.id),'Every player needs a unique id.');
     check(typeof player.name === 'string' && player.name.trim().length > 0,'Every player needs a name.');
     ids.add(player.id);
-    return {id:player.id,name:player.name.trim().slice(0,32),color:player.color || COLORS[index],position:0,cash:1500,inJail:false,jailTurns:0,jailCards:0,bankrupt:false};
+    const profile = sanitizeProfile(player,{color:PLAYER_COLORS[index % PLAYER_COLORS.length],token:TOKEN_OPTIONS[index % TOKEN_OPTIONS.length].id});
+    return {id:player.id,...profile,position:0,cash:settings.startingCash,inJail:false,jailTurns:0,jailCards:0,bankrupt:false};
   });
   const state = {
     version:1,players:roster,turn:0,phase:'roll',dice:[0,0],doubles:0,extraRoll:false,
     properties:Object.fromEntries(BOARD.filter(space => OWNABLE_TYPES.includes(space.type)).map(space => [space.index,{owner:null,houses:0,mortgaged:false}])),
     bank:{houses:32,hotels:12},pending:null,auction:null,debt:null,trade:null,
-    log:[],logSequence:0,revision:0,winner:null,lastCard:null,settings:{salary:200,bail:50},
+    log:[],logSequence:0,revision:0,winner:null,lastCard:null,lastMove:null,lastAction:null,settings,freeParkingPot:0,
   };
   log(state,`${roster.map(p => p.name).join(', ')} joined Istanbul Exchange. ${roster[0].name} goes first.`);
   return state;
 }
 
-export function calculateRent(state,index,diceTotal=state.dice.reduce((sum,die) => sum + die,0)) {
+export function calculateRent(state,index,diceTotal=state.dice.reduce((sum,die) => sum + die,0),cardMultiplier=1) {
   if (!ownable(index)) return 0;
   const asset = state.properties[index];
   if (!asset || !asset.owner || asset.mortgaged) return 0;
   const space = BOARD[index];
+  const multiplier = (state.settings?.rentMultiplier ?? DEFAULT_RULES.rentMultiplier) * cardMultiplier;
   if (space.type === 'railroad') {
     const count = BOARD.filter(s => s.type === 'railroad' && state.properties[s.index].owner === asset.owner).length;
-    return space.rents[count-1];
+    return Math.ceil(space.rents[count-1] * multiplier);
   }
   if (space.type === 'utility') {
     const count = BOARD.filter(s => s.type === 'utility' && state.properties[s.index].owner === asset.owner).length;
-    return diceTotal * (count === 2 ? 10 : 4);
+    return Math.ceil(diceTotal * (count === 2 ? 10 : 4) * multiplier);
   }
-  return space.rents[asset.houses] * (asset.houses === 0 && ownsSet(state,index,asset.owner) ? 2 : 1);
+  return Math.ceil(space.rents[asset.houses] * (asset.houses === 0 && ownsSet(state,index,asset.owner) ? 2 : 1) * multiplier);
 }
 
 // Cash plus what the bank pays for liquidating unencumbered assets and buildings.
@@ -76,6 +80,7 @@ function charge(state,payer,amount,creditorId,reason,returnPhase=nextPhase(state
   if (payer.cash >= amount) {
     payer.cash -= amount;
     if (creditorId) byId(state,creditorId).cash += amount;
+    else if (effect?.parkingContribution) state.freeParkingPot += amount;
     log(state,`${payer.name} paid ₺${amount} ${creditorId ? `to ${byId(state,creditorId).name}` : 'to the bank'} (${reason}).`);
     return true;
   }
@@ -87,22 +92,29 @@ function charge(state,payer,amount,creditorId,reason,returnPhase=nextPhase(state
 }
 
 function sendToJail(state,player) {
+  const from = player.position;
+  if (!state.lastMove) state.lastMove = {id:state.revision+1,playerId:player.id,from,path:[],teleports:[]};
+  state.lastMove.teleports.push({at:state.lastMove.path.length,from,to:10});
+  state.lastMove.path.push(10);
   player.position = 10;
   player.inJail = true;
   player.jailTurns = 0;
   state.extraRoll = false;
   state.doubles = 0;
   state.phase = 'end';
-  log(state,`${player.name} must take a detour. Roll doubles or pay ₺50 to leave.`);
+  log(state,`${player.name} must take a detour. Roll doubles or pay ₺${state.settings.bail} to leave.`);
 }
 
 function move(state,player,steps,rng,{collectSalary=true,rentMultiplier=1}={}) {
   const oldPosition = player.position;
   const total = oldPosition + steps;
+  if (!state.lastMove) state.lastMove = {id:state.revision+1,playerId:player.id,from:oldPosition,path:[],teleports:[]};
+  for (let step=1;step<=Math.abs(steps);step++) state.lastMove.path.push(((oldPosition + Math.sign(steps)*step) % 40 + 40) % 40);
   player.position = ((total % 40) + 40) % 40;
   if (collectSalary && steps > 0 && total >= 40) {
-    player.cash += 200;
-    log(state,`${player.name} passed START and collected ₺200.`);
+    const salary = state.settings.salary * (state.settings.doubleSalaryOnGo && player.position === 0 ? 2 : 1);
+    player.cash += salary;
+    log(state,`${player.name} ${player.position === 0 ? 'landed on' : 'passed'} START and collected ₺${salary}.`);
   }
   land(state,player,rng,rentMultiplier);
 }
@@ -112,8 +124,9 @@ function moveTo(state,player,destination,rng,options={}) {
 }
 
 function drawCard(state,player,type,rng) {
+  const startReward = state.settings.salary * (state.settings.doubleSalaryOnGo ? 2 : 1);
   const opportunities = [
-    {text:'The city is yours. Advance to START and collect ₺200.',action:() => moveTo(state,player,0,rng)},
+    {text:`The city is yours. Advance to START and collect ₺${startReward}.`,action:() => moveTo(state,player,0,rng)},
     {text:'A waterfront deal awaits. Advance to Bosphorus Palace.',action:() => moveTo(state,player,39,rng)},
     {text:'A meeting in Beşiktaş. Advance to Beşiktaş.',action:() => moveTo(state,player,16,rng)},
     {text:'Your design commission pays ₺150.',money:150},
@@ -136,7 +149,7 @@ function drawCard(state,player,type,rng) {
     {text:'A community dividend. Collect ₺25.',money:25},
     {text:'Street closure. Take a detour immediately.',jail:true},
     {text:'A quiet route. Keep one free detour pass.',pass:true},
-    {text:'Return to START and collect ₺200.',action:() => moveTo(state,player,0,rng)},
+    {text:`Return to START and collect ₺${startReward}.`,action:() => moveTo(state,player,0,rng)},
     {text:'Neighbourhood repairs: ₺40 per house and ₺115 per hotel.',repair:[40,115]},
   ];
   const deck = type === 'chance' ? opportunities : community;
@@ -164,9 +177,15 @@ function land(state,player,rng,rentMultiplier=1) {
       state.pending = {property:space.index,returnPhase:state.phase};
       state.phase = 'purchase';
     } else if (asset.owner !== player.id && !asset.mortgaged) {
-      charge(state,player,calculateRent(state,space.index)*rentMultiplier,asset.owner,`rent at ${space.name}`);
+      charge(state,player,calculateRent(state,space.index,undefined,rentMultiplier),asset.owner,`rent at ${space.name}`);
     }
-  } else if (space.type === 'tax') charge(state,player,space.amount,null,space.name);
+  } else if (space.type === 'tax') charge(state,player,space.amount,null,space.name,nextPhase(state),{parkingContribution:state.settings.freeParkingPot});
+  else if (space.type === 'parking' && state.settings.freeParkingPot && state.freeParkingPot > 0) {
+    const pot = state.freeParkingPot;
+    player.cash += pot;
+    state.freeParkingPot = 0;
+    log(state,`${player.name} collected the ₺${pot} Tea Break pot.`);
+  }
   else if (space.type === 'goToJail') sendToJail(state,player);
   else if (space.type === 'chance' || space.type === 'community') drawCard(state,player,space.type,rng);
 }
@@ -178,7 +197,7 @@ function settleDebt(state,rng) {
   if (player.cash < debt.amount) return;
   state.debt = null;
   state.phase = debt.returnPhase;
-  charge(state,player,debt.amount,debt.creditorId,debt.reason,debt.returnPhase);
+  charge(state,player,debt.amount,debt.creditorId,debt.reason,debt.returnPhase,debt.effect);
   if (debt.effect?.release) { player.inJail = false; player.jailTurns = 0; }
   if (debt.effect?.move) move(state,player,debt.effect.move,rng);
 }
@@ -249,7 +268,7 @@ function manageProperty(state,player,action) {
     check(ownsSet(state,index,player.id),'Own the complete color group before building.');
     check(group.every(i => !state.properties[i].mortgaged),'Unmortgage the complete group before building.');
     check(asset.houses < 5,'This district already has a hotel.');
-    check(asset.houses === Math.min(...group.map(i => state.properties[i].houses)),'Build evenly across the color group.');
+    check(!state.settings.evenBuilding || asset.houses === Math.min(...group.map(i => state.properties[i].houses)),'Build evenly across the color group.');
     check(player.cash >= space.buildCost,'Not enough cash to build.');
     if (asset.houses === 4) {
       check(state.bank.hotels > 0,'The bank has no hotels left.');
@@ -259,7 +278,7 @@ function manageProperty(state,player,action) {
     log(state,`${player.name} built ${asset.houses === 5 ? 'a hotel' : 'a house'} at ${space.name}.`);
   } else if (action.type === 'SELL_BUILDING') {
     check(asset.houses > 0,'This property has no buildings to sell.');
-    check(asset.houses === Math.max(...group.map(i => state.properties[i].houses)),'Sell buildings evenly across the color group.');
+    check(!state.settings.evenBuilding || asset.houses === Math.max(...group.map(i => state.properties[i].houses)),'Sell buildings evenly across the color group.');
     if (asset.houses === 5) {
       check(state.bank.houses >= 4,'The bank needs four houses to exchange for this hotel.');
       state.bank.hotels++; state.bank.houses -= 4;
@@ -299,6 +318,11 @@ export function applyAction(previous,actorId,action,rng=Math.random) {
   check(action && typeof action.type === 'string','Choose a valid action.');
   check(previous.phase !== 'finished','The game is finished.');
   const state = structuredClone(previous);
+  state.settings = normalizeRules(state.settings);
+  state.freeParkingPot ??= 0;
+  state.lastMove = null;
+  state.lastAction = {id:state.revision+1,type:action.type,playerId:actorId};
+  if (ownable(action.property)) state.lastAction.property = action.property;
   const player = byId(state,actorId);
   check(player && !player.bankrupt,'You are not an active player in this game.');
   const tradeResponse = ['ACCEPT_TRADE','REJECT_TRADE'].includes(action.type);
@@ -331,7 +355,7 @@ export function applyAction(previous,actorId,action,rng=Math.random) {
           player.jailTurns++;
           state.phase = 'end';
           if (player.jailTurns >= 3) {
-            if (charge(state,player,50,null,'third detour turn','end',{release:true,move:steps})) {
+            if (charge(state,player,state.settings.bail,null,'third detour turn','end',{release:true,move:steps})) {
               player.inJail = false; player.jailTurns = 0; move(state,player,steps,rng);
             }
           } else log(state,`${player.name} stays on the detour (${player.jailTurns}/3 attempts).`);
@@ -347,7 +371,8 @@ export function applyAction(previous,actorId,action,rng=Math.random) {
     case 'BUY': {
       check(state.phase === 'purchase' && state.pending,'There is no property to buy.');
       const index = state.pending.property, price = BOARD[index].price;
-      check(player.cash >= price,'Not enough cash. Send the property to auction instead.');
+      check(player.cash >= price,state.settings.auctions ? 'Not enough cash. Send the property to auction instead.' : 'Not enough cash. Skip this purchase instead.');
+      state.lastAction.property = index;
       player.cash -= price; state.properties[index].owner = player.id;
       state.phase = state.pending.returnPhase; state.pending = null;
       log(state,`${player.name} bought ${BOARD[index].name} for ₺${price}.`);
@@ -355,6 +380,12 @@ export function applyAction(previous,actorId,action,rng=Math.random) {
     }
     case 'AUCTION': {
       check(state.phase === 'purchase' && state.pending,'There is no property to auction.');
+      state.lastAction.property = state.pending.property;
+      if (!state.settings.auctions) {
+        log(state,`${player.name} declined ${BOARD[state.pending.property].name}; it stays with the bank.`);
+        state.phase = state.pending.returnPhase; state.pending = null;
+        break;
+      }
       state.auction = {property:state.pending.property,highestBid:0,highestBidder:null,activeBidders:active(state).map(p => p.id),bidderId:player.id,returnPhase:state.pending.returnPhase};
       state.pending = null; state.phase = 'auction';
       log(state,`${BOARD[state.auction.property].name} is up for auction. Everyone may bid, including ${player.name}.`);
@@ -389,7 +420,7 @@ export function applyAction(previous,actorId,action,rng=Math.random) {
       if (player.jailCards > 0) {
         player.jailCards--; player.inJail = false; player.jailTurns = 0;
         log(state,`${player.name} used a free detour pass.`);
-      } else if (charge(state,player,50,null,'detour exit','roll',{release:true})) {
+      } else if (charge(state,player,state.settings.bail,null,'detour exit','roll',{release:true})) {
         player.inJail = false; player.jailTurns = 0;
       }
       break;
@@ -397,6 +428,7 @@ export function applyAction(previous,actorId,action,rng=Math.random) {
       check(state.phase === 'debt' && state.debt.playerId === actorId,'You can declare bankruptcy only when you owe a debt.');
       const creditor = state.debt.creditorId ? byId(state,state.debt.creditorId) : null;
       if (creditor) creditor.cash += player.cash;
+      else if (state.debt.effect?.parkingContribution) state.freeParkingPot += player.cash;
       player.cash = 0; player.bankrupt = true;
       for (const asset of Object.values(state.properties)) {
         if (asset.owner !== actorId) continue;

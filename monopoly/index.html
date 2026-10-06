@@ -16,8 +16,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;450;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/assets/site.css">
-  <link rel="stylesheet" href="./game.css?v=20261006-2">
-  <script type="module" src="./app.js"></script>
+  <link rel="stylesheet" href="./game.css?v=20261006-4">
+  <link rel="stylesheet" href="./immersive.css?v=20261006-4">
+  <script type="module" src="./app.js?v=20261006-4"></script>
 </head>
 <body>
 <div class="page">
@@ -25,7 +26,7 @@
     <header class="game-header">
       <div class="header-left">
         <h1><a href="/">Mehmet Ömer Tepe</a></h1>
-        <p class="tagline">Istanbul Exchange <span class="edition">/ 01</span></p>
+        <p class="tagline">Istanbul Exchange <span class="edition">/ 02</span></p>
       </div>
       <div class="toggles">
         <div class="toggle-row" aria-label="Language"><button data-lang="en" title="English">en</button><button data-lang="tr" title="Türkçe">tr</button></div>
@@ -37,10 +38,19 @@
       <div class="table-heading"><span class="eyebrow" data-copy="table">ISTANBUL / THE TABLE</span><span id="connection" role="status">2–6 players · online or local</span></div>
       <div class="game-layout">
         <section class="board-area" aria-label="Game board">
-          <div class="board" id="board"><div class="board-center" id="board-center"></div></div>
+          <div class="board-tools" id="board-tools"></div>
+          <div class="board-stage" id="board-stage">
+            <div id="scene-view" aria-label="Interactive 3D game board"></div>
+            <div class="board" id="board"><div class="board-center" id="board-center"></div></div>
+            <div id="celebration" aria-hidden="true"></div>
+            <div id="reaction-layer" aria-live="polite"></div>
+            <div id="scene-loading" class="scene-loading"><span class="loading-cube" aria-hidden="true"></span><span>Setting the table…</span></div>
+          </div>
+          <div class="scene-caption" id="scene-caption"></div>
+          <div id="event-ribbon" aria-live="polite"></div>
           <div class="board-foot"><span data-copy="boardHint">Select a space to inspect its deed.</span><span class="mono">41.0082° N / 28.9784° E</span></div>
         </section>
-        <aside class="sidebar" aria-label="Game controls"><div id="room-panel"></div><div id="players-panel"></div><div id="property-panel"></div><div id="portfolio-panel"></div><div id="activity-panel"></div></aside>
+        <aside class="sidebar" aria-label="Game controls"><div id="play-panel"></div><div id="room-panel"></div><div id="players-panel"></div><div id="property-panel"></div><div id="portfolio-panel"></div><div id="activity-panel"></div></aside>
       </div>
     </main>
     <footer class="game-footer"><span>© 2026 Mehmet Ömer Tepe</span><span data-copy="footer">A property game, made for friends.</span><a href="https://github.com/MOmerTepe/MOmerTepe.github.io/tree/main/monopoly">source ↗</a></footer>
