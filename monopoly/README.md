@@ -65,7 +65,7 @@ python -m http.server 8080
 
 Then open `http://localhost:8080/monopoly/`. Serving the root also makes the shared `/assets/` resources available. JavaScript modules require an HTTP(S) origin; opening `index.html` as a local file is not supported.
 
-For deployment, publish this repository through its existing GitHub Pages configuration. There is no build, database, app server, account system, or backend secret to configure. Keep the existing `CNAME` and HTTPS setting. The production route is `https://omertepe.com/monopoly/`.
+For deployment, publish this repository through its existing GitHub Pages configuration. There is no build, database, app server, or player account system. Keep the existing `CNAME` and HTTPS setting. The production route is `https://omertepe.com/monopoly/`. The browser TURN configuration described below uses the site's Metered free-tier relay account.
 
 ## How multiplayer works
 
@@ -73,13 +73,21 @@ GitHub Pages serves the HTML, CSS, JavaScript, vendored PeerJS 1.5.5 browser lib
 
 PeerJS signaling introduces players, then WebRTC data channels carry room state and player commands. The host applies commands to one authoritative game state and distributes updates to guests. Online protocol version 2 includes validated room rules and pawn cosmetics; its room identifiers use the `omertepe-estates-v2-` prefix. Older protocol versions cannot join these rooms, so all participants should reload the current page before joining.
 
-WebRTC still needs network infrastructure: signaling coordinates connections, STUN discovers addresses, and TURN relays traffic when a direct connection is unavailable. The pinned PeerJS library's defaults supply:
+WebRTC still needs network infrastructure: signaling coordinates connections, STUN discovers addresses, and TURN relays traffic when a direct connection is unavailable. The game explicitly configures its ICE servers in `ice-config.js` instead of using the relay endpoints bundled with PeerJS:
 
 - TLS signaling at `0.peerjs.com:443`.
 - STUN at `stun.l.google.com:19302`.
-- TURN at `eu-0.turn.peerjs.com:3478` and `us-0.turn.peerjs.com:3478`.
+- TURN: account-generated Metered UDP, TCP, and TLS endpoints in `TURN_SERVERS`, using a browser-only relay credential approved by the site owner.
 
-These are shared public services. Their availability, rate limits, and network reachability are outside the site's control, so connectivity is not guaranteed on every corporate, school, VPN, or mobile network. For dependable production operation, use maintained signaling and TURN services while continuing to host the frontend on GitHub Pages. There is no configuration panel: change the `Peer` constructor options in `RoomSession._makePeer()` in `network.js` to configure your services. Preserve TURN capability when replacing the ICE configuration. Never put private provider API keys or long-lived secret credentials in this public repository; a managed relay requiring short-lived credentials needs an appropriate credential service.
+The selected Metered free plan includes a 20 GB relay allowance, with no paid plan or overage billing enabled. Relay service stops when that allowance is exhausted. Metered describes these free servers as intended for development, with fewer regions and no service-level agreement; this setup does not provide a production availability guarantee.
+
+To rotate the relay credential, create a new browser TURN credential in the Metered dashboard and replace the TURN entries in `TURN_SERVERS` with the supplied ICE-server array's TURN entries. Preserve its UDP, TCP, and TLS endpoints. Each entry needs its `urls`, `username`, and `credential` (the generated TURN password). Metered documents this flow in [Creating TURN Credentials](https://www.metered.ca/docs/turn-server-service/creating-turn-credentials/). New credentials may need up to two minutes to propagate before testing.
+
+These browser relay credentials are intentionally visible in the public JavaScript with the site owner's approval. They grant relay usage, so keep their provider quota under review and rotate or revoke them in the dashboard if needed. They are not account-management credentials. Never add a management API key or account secret key to this repository. The game makes no credential API request and needs no credential-fetching backend; only the generated browser TURN username/password goes in the static configuration.
+
+`getIceConfig()` validates endpoint syntax and credentials before passing a fresh configuration to PeerJS. Empty TURN configuration is allowed for direct-connection development, while the readiness check below rejects it. Passing validation does not establish that a relay is reachable or that its credentials work. On 2026-10-06, six browser clients connected with `iceTransportPolicy: 'relay'`, all five guest links selected relay candidates, and the host started the game. A separate test restricting both ends to TURN over TLS on port 443 also connected successfully. These tests used the actual PeerJS transport and Metered service, not a simulated network. Keep diagnostic overrides out of the normal production configuration so direct connections remain available.
+
+Signaling and relay availability, quotas, and network reachability remain outside the site's control. A restrictive corporate, school, VPN, or mobile network can still block online play. The frontend continues to live entirely on GitHub Pages.
 
 The host and guests run code in their own browsers. This is a casual game for trusted friends, not a cheat-resistant competitive service: an altered host can alter its own game state. There is no durable game recovery after the host leaves.
 
@@ -99,10 +107,12 @@ Display names, pawn choices, room membership, rules, actions, and game state are
 - `graphics.js`: pawn/building graphics and optional audio and motion effects.
 - `scene.js`: Three.js board, modeled city and pieces, movement animation, space selection, and camera controls.
 - `network.js`: rooms, host validation, state synchronization, and reconnects.
+- `ice-config.js`: static browser STUN/TURN configuration and strict TURN validation.
 - `vendor/peerjs.min.js`, `vendor/LICENSE.peerjs`: pinned PeerJS 1.5.5 and its license.
 - `vendor/three.module.js`, `vendor/three.core.js`, `vendor/LICENSE.three`: pinned Three.js 0.186.1 and its MIT license.
 - `tests/`: deterministic engine checks.
 - `network.test.mjs`: transport checks with a simulated PeerJS network.
+- `ice-config.test.mjs`: configuration validation and a separately reported deployment relay-readiness check.
 
 ## Checks
 
@@ -111,6 +121,13 @@ With a current Node.js version, run the game engine tests from the repository ro
 ```sh
 node --test monopoly/tests/*.test.mjs
 node --test monopoly/network.test.mjs
+node --test monopoly/ice-config.test.mjs
+```
+
+The relay-readiness test runs against the configured TURN entries. For direct-only development it reports a skip when `TURN_SERVERS` is empty, but the Game checks workflow also runs the mandatory guard below and fails if the relay configuration is missing. This guard checks configuration, not network reachability:
+
+```sh
+node --input-type=module -e "import { getIceConfig } from './monopoly/ice-config.js'; getIceConfig({ requireRelay: true });"
 ```
 
 The automated checks cover the game engine, rule validation, movement events, and simulated room transport. To check online play, open separate browser sessions, create a room in one, join from the other, and verify both players see the same pawn choices, rules, turn, buildings, and balance changes. Exercise both 3D and 2D views, keyboard controls, reduced motion, and sound opt-in. Test again with devices on different networks before relying on a chosen relay configuration; a same-device test does not establish cross-network reachability.

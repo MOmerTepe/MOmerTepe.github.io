@@ -1,6 +1,7 @@
 import { createGame, applyAction } from './engine.js?v=20261006-4';
 import { DEFAULT_RULES, normalizeRules } from './rules.js?v=20261006-4';
 import { PLAYER_COLORS, sanitizeProfile } from './cosmetics.js?v=20261006-4';
+import { getIceConfig } from './ice-config.js?v=20261006-5';
 
 // The page stays entirely static. PeerJS supplies signaling and WebRTC transport;
 // the room creator's browser is the only authority allowed to change game state.
@@ -9,6 +10,11 @@ const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const PREFIX = 'omertepe-estates-v2-';
 const MAX_PLAYERS = 6;
 const CONNECT_TIMEOUT = 20000;
+const LIBRARY_TIMEOUT = 15000;
+const JOIN_TIMEOUT = 60000;
+const NEGOTIATION_TIMEOUT = 20000;
+const HELLO_INTERVAL = 2000;
+const HELLO_TIMEOUT = 15000;
 const RECONNECT_GRACE = 90000;
 const MAX_MESSAGE = 8192;
 const REACTIONS = new Set(['wave', 'gg', 'wow', 'lucky']);
@@ -24,6 +30,7 @@ const normalCode = value => String(value || '').toUpperCase().replace(/[\s-]/g, 
 const validCode = code => code.length === 8 && [...code].every(c => ALPHABET.includes(c));
 const validId = id => typeof id === 'string' && /^p[a-f0-9]{32}$/.test(id);
 const validToken = token => typeof token === 'string' && /^[a-f0-9]{64}$/.test(token);
+const validInstance = id => typeof id === 'string' && /^[a-f0-9]{32}$/.test(id);
 const cleanName = value => String(value || '').replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 24) || 'Player';
 const isObject = value => !!value && typeof value === 'object' && !Array.isArray(value);
 const actionValid = action => {
@@ -31,14 +38,18 @@ const actionValid = action => {
   catch { return false; }
 };
 
-function getIdentity() {
+function saveIdentity(storage, identity) {
+  try { storage?.setItem('omertepe.estates.identity.v1', JSON.stringify(identity)); } catch { /* In-memory identity remains usable. */ }
+}
+
+function getIdentity(storage) {
   const key = 'omertepe.estates.identity.v1';
   try {
-    const saved = JSON.parse(sessionStorage.getItem(key));
+    const saved = JSON.parse(storage?.getItem(key) || null);
     if (saved && validId(saved.id) && validToken(saved.token)) return saved;
   } catch { /* Storage may be disabled. This tab can still play. */ }
   const identity = { id: `p${randomHex()}`, token: randomHex(32) };
-  try { sessionStorage.setItem(key, JSON.stringify(identity)); } catch { /* In-memory identity. */ }
+  saveIdentity(storage, identity);
   return identity;
 }
 
@@ -46,9 +57,27 @@ function loadPeer() {
   if (globalThis.Peer) return Promise.resolve(globalThis.Peer);
   if (!peerScript) peerScript = new Promise((resolve, reject) => {
     const script = document.createElement('script');
+    let settled = false;
+    const fail = message => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      script.onload = script.onerror = null;
+      script.remove();
+      peerScript = null;
+      reject(new Error(message));
+    };
+    const timeout = setTimeout(() => fail('The online-play library took too long to load. Check your connection and try again.'), LIBRARY_TIMEOUT);
     script.src = new URL('./vendor/peerjs.min.js', import.meta.url).href;
-    script.onload = () => globalThis.Peer ? resolve(globalThis.Peer) : reject(new Error('Online play could not load. Refresh the page and try again.'));
-    script.onerror = () => { peerScript = null; script.remove(); reject(new Error('Online play could not load. Check your connection and try again.')); };
+    script.onload = () => {
+      if (settled) return;
+      if (!globalThis.Peer) { fail('Online play could not load. Refresh the page and try again.'); return; }
+      settled = true;
+      clearTimeout(timeout);
+      script.onload = script.onerror = null;
+      resolve(globalThis.Peer);
+    };
+    script.onerror = () => fail('Online play could not load. Check your connection and try again.');
     document.head.append(script);
   });
   return peerScript;
@@ -74,8 +103,12 @@ export class RoomSession {
     this.onStatus = onStatus;
     this.onError = onError;
     this.onReaction = onReaction;
-    this.identity = getIdentity();
+    try { this._identityStorage = globalThis.sessionStorage; } catch { this._identityStorage = null; }
+    this.identity = getIdentity(this._identityStorage);
     this.playerId = this.identity.id;
+    // This is deliberately not persisted: duplicated tabs may copy sessionStorage,
+    // but must never silently evict an already connected player.
+    this.clientInstance = randomHex();
     this.state = null;
     this.roomCode = '';
     this.isHost = false;
@@ -95,6 +128,10 @@ export class RoomSession {
     this._connecting = false;
     this._offlineSince = null;
     this._lastHostMessage = 0;
+    this._helloTimer = null;
+    this._connectionAccepted = false;
+    this._identityRotations = 0;
+    this._lastConnectError = '';
   }
 
   get players() { return [...this._roster.values()].map(({ id, name, token, color, connected }) => ({ id, name, token, color, connected })); }
@@ -106,7 +143,12 @@ export class RoomSession {
   }
 
   _status(kind, message) {
-    this.onStatus({ kind, message, roomCode: this.roomCode, isHost: this.isHost, playerId: this.playerId, connectedPlayerIds: this.connectedPlayerIds });
+    this._notify('onStatus', { kind, message, roomCode: this.roomCode, isHost: this.isHost, playerId: this.playerId, connectedPlayerIds: this.connectedPlayerIds });
+  }
+
+  _notify(callback, value) {
+    try { this[callback](value); }
+    catch (error) { console.error(`Room UI callback ${callback} failed:`, error); }
   }
 
   _later(callback, delay) {
@@ -118,10 +160,23 @@ export class RoomSession {
   _cancel(timer) { clearTimeout(timer); this._timers.delete(timer); }
 
   async _makePeer(id, generation) {
-    const Peer = await loadPeer();
+    this._status('loading', 'Loading online play…');
+    const Peer = await new Promise((resolve, reject) => {
+      const opening = { reject };
+      this._openingWait = opening;
+      loadPeer().then(value => {
+        if (this._openingWait === opening) this._openingWait = null;
+        resolve(value);
+      }, error => {
+        if (this._openingWait === opening) this._openingWait = null;
+        reject(error);
+      });
+    });
     if (generation !== this._generation) throw new Error('Connection cancelled.');
-    // Keep PeerJS's default STUN + TURN configuration. Do not replace it with STUN-only.
-    const peer = id ? new Peer(id, { debug: 0 }) : new Peer({ debug: 0 });
+    this._status('signaling', 'Contacting the room connection service…');
+    // Explicit deployment configuration avoids relying on bundled relay defaults.
+    const options = { debug: 0, config: getIceConfig() };
+    const peer = id ? new Peer(id, options) : new Peer(options);
     this._peer = peer;
     return new Promise((resolve, reject) => {
       let settled = false;
@@ -146,10 +201,15 @@ export class RoomSession {
       });
       peer.on('error', error => {
         if (generation !== this._generation) return;
+        this._lastConnectError = friendlyError(error);
         if (!settled) { settled = true; clearOpening(); this._cancel(timeout); reject(new Error(friendlyError(error))); return; }
         if (!this.isHost && !this._hostConnection?.open) {
           this._connecting = false;
+          this._hostConnection?.close();
+          this._status('retrying', `${this._lastConnectError} Retrying while the room connection window is open.`);
           this._scheduleGuestRetry();
+        } else if (error.type === 'webrtc') {
+          this._status('connection-error', this._lastConnectError);
         } else if (error.type !== 'peer-unavailable') {
           this._status('signaling-offline', 'The connection service is reconnecting. Existing players can keep playing.');
           this._reconnectSignaling();
@@ -198,7 +258,7 @@ export class RoomSession {
         }
       }
       if (generation !== this._generation) throw new Error('Connection cancelled.');
-      this._roster.set(this.playerId, { id: this.playerId, reconnectToken: this.identity.token, ...this._profile, connected: true });
+      this._roster.set(this.playerId, { id: this.playerId, reconnectToken: this.identity.token, clientInstance: this.clientInstance, ...this._profile, connected: true });
       this.state = { kind: 'lobby', players: this.players, hostId: this.playerId, roomCode: this.roomCode, settings: normalizeRules(DEFAULT_RULES) };
       this.revision = 0;
       this._publish();
@@ -206,7 +266,7 @@ export class RoomSession {
       this._status('connected', 'Room open. Share the code with your friends.');
       return this.roomCode;
     } catch (error) {
-      if (generation === this._generation) { this.leave(false); this.onError(error.message); }
+      if (generation === this._generation) { this.leave(false); this._notify('onError', error.message); }
       throw error;
     }
   }
@@ -215,7 +275,7 @@ export class RoomSession {
     const normalized = normalCode(code);
     if (!validCode(normalized)) {
       const error = new Error('Enter the eight-character room code, such as ABCD-2345.');
-      this.onError(error.message);
+      this._notify('onError', error.message);
       throw error;
     }
     this.leave(false);
@@ -233,16 +293,18 @@ export class RoomSession {
         const timeout = this._later(() => {
           if (!this._joinWait) return;
           this._joinWait = null;
-          const error = new Error('Could not reach the room. Check the code, keep the host tab open, or try another network.');
+          const error = new Error(this._lastConnectError
+            ? `Could not join the room. ${this._lastConnectError}`
+            : 'The browsers could not finish connecting. Keep the host tab open and try again; your network may need an available relay.');
           this.leave(false);
-          this.onError(error.message);
+          this._notify('onError', error.message);
           reject(error);
-        }, CONNECT_TIMEOUT);
+        }, JOIN_TIMEOUT);
         this._joinWait = { resolve, reject, timeout };
         this._connectToHost();
       });
     } catch (error) {
-      if (generation === this._generation) { this.leave(false); this.onError(error.message); }
+      if (generation === this._generation) { this.leave(false); this._notify('onError', error.message); }
       throw error;
     }
   }
@@ -253,19 +315,35 @@ export class RoomSession {
     const generation = this._generation;
     const conn = this._peer.connect(`${PREFIX}${this._code}`, { reliable: true, serialization: 'json', metadata: { protocol: PROTOCOL } });
     this._hostConnection = conn;
+    this._connectionAccepted = false;
+    this._status('negotiating', 'Connecting your browser to the host…');
     const timeout = this._later(() => {
       if (generation === this._generation && this._hostConnection === conn && !conn.open) {
         this._connecting = false;
+        this._lastConnectError = 'The browsers could not establish a data connection. A firewall or unavailable relay may be blocking this network.';
         conn.close();
         this._scheduleGuestRetry();
       }
-    }, 6500);
+    }, NEGOTIATION_TIMEOUT);
     conn.on('open', () => {
       if (generation !== this._generation || this._hostConnection !== conn) { conn.close(); return; }
       this._cancel(timeout);
       this._connecting = false;
       this._lastHostMessage = Date.now();
-      this._send(conn, { type: 'hello', playerId: this.playerId, token: this.identity.token, profile: this._profile });
+      this._status('handshaking', 'Browsers connected. Joining the table…');
+      const openedAt = Date.now();
+      const hello = () => {
+        this._helloTimer = null;
+        if (generation !== this._generation || this._hostConnection !== conn || !conn.open || this._connectionAccepted) return;
+        if (Date.now() - openedAt >= HELLO_TIMEOUT) {
+          this._lastConnectError = 'The host opened a connection but did not confirm your seat. Check that the host tab is responsive.';
+          conn.close();
+          return;
+        }
+        this._sendHello(conn);
+        this._helloTimer = this._later(hello, HELLO_INTERVAL);
+      };
+      hello();
     });
     conn.on('data', data => {
       if (generation === this._generation && this._hostConnection === conn) this._receiveFromHost(data);
@@ -273,12 +351,19 @@ export class RoomSession {
     const closed = () => {
       this._cancel(timeout);
       if (generation !== this._generation || this._hostConnection !== conn) return;
+      this._cancel(this._helloTimer);
+      this._helloTimer = null;
       this._hostConnection = null;
+      this._connectionAccepted = false;
       this._connecting = false;
       this._guestOffline();
     };
     conn.on('close', closed);
-    conn.on('error', closed);
+    conn.on('error', error => { this._lastConnectError = friendlyError(error); conn.close(); closed(); });
+  }
+
+  _sendHello(conn = this._hostConnection) {
+    this._send(conn, { type: 'hello', playerId: this.playerId, token: this.identity.token, clientInstance: this.clientInstance, profile: this._profile });
   }
 
   _guestOffline() {
@@ -309,7 +394,8 @@ export class RoomSession {
     const record = { conn, playerId: null, lastMessage: Date.now(), window: Date.now(), count: 0 };
     this._connections.set(conn, record);
     const generation = this._generation;
-    const timeout = this._later(() => { if (!record.playerId) conn.close(); }, 8000);
+    // PeerJS emits the incoming connection before ICE negotiation necessarily ends.
+    const timeout = this._later(() => { if (!record.playerId) conn.close(); }, NEGOTIATION_TIMEOUT + HELLO_TIMEOUT);
     conn.on('data', data => {
       if (generation !== this._generation) return;
       record.lastMessage = Date.now();
@@ -320,12 +406,12 @@ export class RoomSession {
         return;
       }
       if (++record.count > 30 || !this._validMessage(data)) { conn.close(); return; }
-      if (!record.playerId) {
-        if (data.type !== 'hello') { conn.close(); return; }
-        this._cancel(timeout);
+      if (data.type === 'hello') {
         this._hello(record, data);
+        if (record.playerId) this._cancel(timeout);
         return;
       }
+      if (!record.playerId) { conn.close(); return; }
       if (data.type === 'ping') this._send(conn, { type: 'pong' });
       else if (['action', 'profile', 'reaction'].includes(data.type)) this._guestAction(record, data);
       else if (data.type === 'rules') this._send(conn, { type: 'error', ack: data.id, message: 'Only the host can change the room rules.' });
@@ -353,12 +439,28 @@ export class RoomSession {
 
   _hello(record, data) {
     const reject = message => { this._send(record.conn, { type: 'rejected', message }); this._later(() => record.conn.close(), 200); };
-    if (!validId(data.playerId) || !validToken(data.token) || data.playerId === this.playerId) { reject('This player session is already hosting the room. Open another browser to join as a different player.'); return; }
+    if (!validId(data.playerId) || !validToken(data.token) || !validInstance(data.clientInstance)) { reject('This player session is invalid or outdated. Refresh the game and try again.'); return; }
     let player = this._roster.get(data.playerId);
+    if (record.playerId) {
+      if (record.playerId !== data.playerId || player?.conn !== record.conn || player.reconnectToken !== data.token || player.clientInstance !== data.clientInstance) {
+        reject('This connection no longer owns that seat. Rejoin from your original tab.');
+        return;
+      }
+      // A repeated hello only resends the welcome; it never changes the roster.
+      this._sendState(record.conn);
+      return;
+    }
     if (player) {
       if (player.reconnectToken !== data.token) { reject('That seat belongs to another session. Rejoin from your original browser tab.'); return; }
+      const activeElsewhere = player.id === this.playerId || (player.connected && player.conn?.open && player.clientInstance !== data.clientInstance);
+      if (activeElsewhere) {
+        if (this.state?.kind === 'lobby') this._send(record.conn, { type: 'identity-conflict' });
+        else reject('That player is already active in another tab. Return to the original tab, or close it before rejoining your seat.');
+        return;
+      }
       const oldConnection = player.conn;
       player.conn = record.conn;
+      player.clientInstance = data.clientInstance;
       oldConnection?.close();
       player.connected = true;
       player.offlineAt = null;
@@ -366,7 +468,7 @@ export class RoomSession {
       if (this.state?.kind !== 'lobby') { reject('This game has already started. Ask the host to create a new room after the game.'); return; }
       if (this._roster.size >= MAX_PLAYERS) { reject('This room is full. Up to six players can join.'); return; }
       const profile = sanitizeProfile(data.profile, { color: PLAYER_COLORS[this._roster.size % PLAYER_COLORS.length] });
-      player = { id: data.playerId, reconnectToken: data.token, ...profile, connected: true, conn: record.conn };
+      player = { id: data.playerId, reconnectToken: data.token, clientInstance: data.clientInstance, ...profile, connected: true, conn: record.conn };
       this._roster.set(player.id, player);
     }
     record.playerId = player.id;
@@ -392,28 +494,42 @@ export class RoomSession {
 
   _publish() {
     if (this.state?.kind === 'lobby') this.state.players = this.players;
-    this.onState(clone(this.state));
+    // Admission and action acknowledgments must not depend on UI rendering.
     for (const record of this._connections.values()) if (record.playerId) this._sendState(record.conn);
+    this._notify('onState', clone(this.state));
   }
 
   _receiveFromHost(data) {
     // State snapshots may be larger than guest action messages as the log grows.
     if (!isObject(data) || data.protocol !== PROTOCOL || typeof data.type !== 'string') return;
     this._lastHostMessage = Date.now();
+    if (data.type === 'identity-conflict') {
+      if (!this._joinWait || this._identityRotations >= 2) {
+        this._receiveFromHost({ protocol: PROTOCOL, type: 'rejected', message: 'This tab could not create a separate player identity. Close duplicate game tabs and try again.' });
+        return;
+      }
+      this._identityRotations++;
+      this.identity = { id: `p${randomHex()}`, token: randomHex(32) };
+      this.playerId = this.identity.id;
+      saveIdentity(this._identityStorage, this.identity);
+      this._status('handshaking', 'Creating a separate seat for this tab…');
+      this._sendHello();
+      return;
+    }
     if (data.type === 'rejected') {
       const message = typeof data.message === 'string' ? data.message.slice(0, 240) : 'The room declined the connection.';
       const wait = this._joinWait;
       this._joinWait = null;
       if (wait) { this._cancel(wait.timeout); wait.reject(new Error(message)); }
       this.leave(false);
-      this.onError(message);
+      this._notify('onError', message);
       this._status('disconnected', message);
       return;
     }
     if (data.type === 'error') {
       const request = this._pending.get(data.ack);
       if (request) { this._pending.delete(data.ack); request.reject(new Error(String(data.message || 'That action is not available.').slice(0, 240))); }
-      this.onError(String(data.message || 'That action is not available.').slice(0, 240));
+      this._notify('onError', String(data.message || 'That action is not available.').slice(0, 240));
       return;
     }
     if (data.type === 'closing') {
@@ -423,12 +539,16 @@ export class RoomSession {
       return;
     }
     if (data.type === 'reaction') { this._deliverReaction(data.event); return; }
-    if (data.type !== 'state' || !isObject(data.state) || !Number.isSafeInteger(data.revision) || !Array.isArray(data.roster) || data.roster.length > MAX_PLAYERS) return;
+    if (data.type !== 'state' || !isObject(data.state) || !Number.isSafeInteger(data.revision) || !Array.isArray(data.roster) || data.roster.length > MAX_PLAYERS || !data.roster.some(p => p?.id === this.playerId)) return;
+    this._connectionAccepted = true;
+    this._cancel(this._helloTimer);
+    this._helloTimer = null;
+    let changed = false;
     if (data.revision >= this.revision) {
       this.revision = data.revision;
       this.state = clone(data.state);
       this._roster = new Map(data.roster.filter(p => isObject(p) && validId(p.id)).map(p => [p.id, { id: p.id, ...sanitizeProfile(p), connected: !!p.connected }]));
-      this.onState(clone(this.state));
+      changed = true;
     }
     if (data.ack) {
       const request = this._pending.get(data.ack);
@@ -447,6 +567,8 @@ export class RoomSession {
     this._offlineSince = null;
     this._cancel(this._retryTimer);
     this._retryTimer = null;
+    this._lastConnectError = '';
+    if (changed) this._notify('onState', clone(this.state));
     for (const [id, pending] of this._pending) if (!pending.sentAt || Date.now() - pending.sentAt > 1500) this._sendRequest(id, pending);
   }
 
@@ -489,7 +611,7 @@ export class RoomSession {
         this.revision++;
         this._publish();
         return Promise.resolve(clone(this.state));
-      } catch (error) { this.onError(error.message); return Promise.reject(error); }
+      } catch (error) { this._notify('onError', error.message); return Promise.reject(error); }
     }
     return this._request('action', { action });
   }
@@ -552,7 +674,7 @@ export class RoomSession {
     if (!isObject(event) || !this._roster.has(event.playerId) || !REACTIONS.has(event.reaction) || !/^[a-f0-9]{32}$/.test(event.id) || this._reactionSeen.has(event.id)) return;
     this._reactionSeen.add(event.id);
     if (this._reactionSeen.size > 64) this._reactionSeen.delete(this._reactionSeen.values().next().value);
-    this.onReaction({ playerId: event.playerId, reaction: event.reaction, id: event.id });
+    this._notify('onReaction', { playerId: event.playerId, reaction: event.reaction, id: event.id });
   }
 
   _applyReaction(playerId, reaction) {
@@ -586,7 +708,7 @@ export class RoomSession {
       this._publish();
       this._status('playing', 'The game has started. Keep the host tab open.');
       return Promise.resolve(clone(this.state));
-    } catch (error) { this.onError(error.message); return Promise.reject(error); }
+    } catch (error) { this._notify('onError', error.message); return Promise.reject(error); }
   }
 
   kick(playerId) {
@@ -644,6 +766,10 @@ export class RoomSession {
     this._roster.clear();
     this._retryTimer = null;
     this._signalingRetry = null;
+    this._helloTimer = null;
+    this._connectionAccepted = false;
+    this._identityRotations = 0;
+    this._lastConnectError = '';
     this._offlineSince = null;
     this._connecting = false;
     this._heartbeatStarted = false;

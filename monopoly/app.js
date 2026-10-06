@@ -1,6 +1,6 @@
 import { BOARD, GROUPS } from './board.js?v=20261006-4';
 import { createGame, applyAction, calculateRent } from './engine.js?v=20261006-4';
-import { RoomSession } from './network.js?v=20261006-4';
+import { RoomSession } from './network.js?v=20261006-5';
 import { DEFAULT_RULES, RULE_PRESETS, normalizeRules } from './rules.js?v=20261006-4';
 import { TOKEN_OPTIONS, PLAYER_COLORS, sanitizeProfile } from './cosmetics.js?v=20261006-4';
 import { pawnIcon, buildingIcons, GameEffects } from './graphics.js?v=20261006-4';
@@ -129,6 +129,7 @@ function renderCenter() {
   }
   $('board-center').innerHTML=html;
   $('board-center').classList.toggle('rolling',animationBusy&&state?.lastAction?.type==='ROLL');
+  if(!state&&busy)$('board-center').querySelector('.center-content').insertAdjacentHTML('beforeend',button(t('Cancel connection','Bağlantıyı iptal et'),'cancel-connect','text-button local-link'));
   if(!state&&screen!=='local'){
     const chooser=document.createElement('button');chooser.type='button';chooser.className='pawn-summary';chooser.dataset.action='customize';chooser.innerHTML=`<span style="color:${profile.color}">${pawnIcon(profile.token)}</span><span>${t('Your piece','Oyun taşın')}<strong>${tokenLabel(profile.token)}</strong></span><span class="small-muted">${t('change ↗','değiştir ↗')}</span>`;
     const firstButton=$('online-form').querySelector('button');$('online-form').insertBefore(chooser,firstButton.closest('.button-row')||firstButton);
@@ -258,22 +259,23 @@ async function connect() {
   draftName=$('player-name').value.trim();if(!draftName){$('player-name').focus();return;}
   draftCode=$('room-code')?.value||draftCode;save('omt-player-name',draftName);busy=true;render();
   const next=new RoomSession({
-    onState(nextState){installState(nextState);},
-    onReaction(event){showReaction(event);},
+    onState(nextState){if(session===next)installState(nextState);},
+    onReaction(event){if(session===next)showReaction(event);},
     onStatus(status){
+      if(session!==next)return;
       $('connection').textContent=status.message;
       if(status.kind==='disconnected'&&!status.roomCode){state=null;session=null;busy=false;screen='home';history.replaceState(null,'',location.pathname);$('modal').close();render();notice(status.message);}
       else if(state){renderRoom();renderExtras();}
     },
-    onError(message){notice(message);}
+    onError(message){if(session===next)notice(message);}
   });
   session=next;local=false;
-  try{if(screen==='join')await next.join(draftCode,draftName,profile);else{await next.host(draftName,profile);await next.setRules(pendingRules);}history.replaceState(null,'',`${location.pathname}#room=${encodeURIComponent(next.roomCode)}`);}
-  catch(error){next.leave();session=null;state=null;notice(error.message);}
-  finally{busy=false;render();}
+  try{if(screen==='join')await next.join(draftCode,draftName,profile);else{await next.host(draftName,profile);if(session!==next)return;await next.setRules(pendingRules);}if(session===next)history.replaceState(null,'',`${location.pathname}${location.search}#room=${encodeURIComponent(next.roomCode)}`);}
+  catch(error){if(session!==next)return;next.leave(false);session=null;state=null;busy=false;render();notice(error.message);}
+  finally{if(session===next){busy=false;render();}}
 }
 async function copyInvite(){
-  const url=`${location.origin}${location.pathname}#room=${encodeURIComponent(session.roomCode)}`;
+  const invite=new URL(location.pathname,location.origin),release=new URL(import.meta.url).searchParams.get('v');if(release)invite.searchParams.set('v',release);invite.hash=`room=${session.roomCode}`;const url=invite.href;
   try{await navigator.clipboard.writeText(url);notice(t('Invite link copied. Send it to your friends.','Davet bağlantısı kopyalandı. Arkadaşlarına gönder.'));}
   catch{openModal(t('Invite friends','Arkadaşlarını davet et'),`<label class="field">${t('Copy this link','Bu bağlantıyı kopyala')}<input readonly value="${esc(url)}"></label>`);}
 }
@@ -331,6 +333,7 @@ document.addEventListener('click',async e=>{
   const pref=e.target.closest('[data-theme],[data-lang]');if(pref){if(pref.dataset.theme){theme=pref.dataset.theme;save('omt-theme',theme);}else{lang=pref.dataset.lang;save('omt-lang',lang);}render();return;}
   const space=e.target.closest('[data-space],[data-inspect]');if(space){selected=Number(space.dataset.space??space.dataset.inspect);renderBoard();renderProperty();updateScene(false);return;}
   const b=e.target.closest('[data-action]');if(!b||b.disabled)return;e.preventDefault();const a=b.dataset.action;
+  if(a==='cancel-connect'){const pending=session;session=null;pending?.leave(false);state=null;busy=false;render();return;}
   if(['home','join','local'].includes(a)){if(busy)return;screen=a;renderCenter();return;}
   if(animationBusy&&['review-trade','sell-group-confirm','bankrupt-confirm','trade'].includes(a))return;
   if(a==='house-rules'){showHouseRules();return;}if(a==='appearance'){showAppearance();return;}if(a==='customize'){showCustomization(b.dataset.profileIndex===undefined?null:Number(b.dataset.profileIndex));return;}

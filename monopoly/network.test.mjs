@@ -4,6 +4,7 @@ import { EventEmitter } from 'node:events';
 import { RoomSession } from './network.js';
 import { DEFAULT_RULES, RULE_PRESETS } from './rules.js';
 import { PLAYER_COLORS, TOKEN_OPTIONS, sanitizeProfile } from './cosmetics.js';
+import { getIceConfig } from './ice-config.js';
 
 // A deterministic transport double exercises the actual RoomSession and engine.
 // Browser-to-browser WebRTC is verified separately; this suite tests authority,
@@ -28,8 +29,9 @@ class Connection extends EventEmitter {
 }
 
 class FakePeer extends EventEmitter {
-  constructor(id) {
+  constructor(id, options) {
     super();
+    this.options = typeof id === 'string' ? options : id;
     this.id = typeof id === 'string' ? id : `auto${++nextPeer}`;
     this.destroyed = false;
     this.disconnected = false;
@@ -48,9 +50,14 @@ class FakePeer extends EventEmitter {
     target.links.push(remote);
     queueMicrotask(() => {
       target.emit('connection', remote);
-      local.open = remote.open = true;
-      remote.emit('open');
-      local.emit('open');
+      const open = () => {
+        if (local.closed || remote.closed) return;
+        local.open = remote.open = true;
+        remote.emit('open');
+        local.emit('open');
+      };
+      if (FakePeer.connectionDelay) setTimeout(open, FakePeer.connectionDelay);
+      else open();
     });
     return local;
   }
@@ -67,15 +74,16 @@ class FakePeer extends EventEmitter {
 globalThis.Peer = FakePeer;
 globalThis.location = { href: 'https://omertepe.com/monopoly/' };
 
-function session() {
+function session(identity) {
   const storage = new Map();
+  if (identity) storage.set('omertepe.estates.identity.v1', JSON.stringify(identity));
   globalThis.sessionStorage = { getItem: key => storage.get(key) || null, setItem: (key, value) => storage.set(key, value) };
   const states = [];
   const errors = [];
   const statuses = [];
   const reactions = [];
   const value = new RoomSession({ onState: state => states.push(state), onError: message => errors.push(message), onStatus: status => statuses.push(status), onReaction: event => reactions.push(event) });
-  return { value, states, errors, statuses, reactions };
+  return { value, states, errors, statuses, reactions, storage };
 }
 
 async function room(t, { hostProfile = {}, guestProfile = {} } = {}) {
@@ -299,4 +307,208 @@ test('protocol v2 isolates rooms and reports incompatible wire messages clearly'
   await flush();
   assert.ok(guest.errors.some(message => /different game version.*Refresh/.test(message)));
   assert.equal(guest.value.state, null);
+});
+
+test('six simultaneous guest attempts fill five seats and reject only the seventh player', async t => {
+  const host = session(), guests = Array.from({ length: 6 }, () => session());
+  t.after(() => { guests.forEach(g => g.value.leave()); host.value.leave(); });
+  const code = await host.value.host('Host');
+  const results = await Promise.allSettled(guests.map((g, index) => g.value.join(code, `Guest ${index + 1}`)));
+  await flush();
+  assert.equal(results.filter(result => result.status === 'fulfilled').length, 5);
+  assert.match(results.find(result => result.status === 'rejected').reason.message, /room is full/);
+  assert.equal(host.value.players.length, 6);
+  assert.equal(host.value.connectedPlayerIds.length, 6);
+  for (const guest of guests.filter(g => g.value.state)) assert.deepEqual(guest.value.state, host.value.state);
+});
+
+test('copied host and guest sessionStorage get distinct lobby seats without evicting the originals', async t => {
+  const { host, guest, code } = await room(t);
+  const hostCopy = session(host.value.identity), guestCopy = session(guest.value.identity);
+  t.after(() => { hostCopy.value.leave(); guestCopy.value.leave(); });
+  const originalIdentity = { ...guest.value.identity };
+  await hostCopy.value.join(code, 'Host tab copy');
+  await guestCopy.value.join(code, 'Guest tab copy');
+  await flush();
+  assert.equal(host.value.players.length, 4);
+  assert.equal(new Set(host.value.players.map(p => p.id)).size, 4);
+  assert.ok(guest.value._hostConnection.open);
+  assert.notEqual(hostCopy.value.playerId, host.value.playerId);
+  assert.notEqual(guestCopy.value.playerId, guest.value.playerId);
+  assert.deepEqual(guest.value.identity, originalIdentity);
+  assert.deepEqual(JSON.parse(guestCopy.storage.get('omertepe.estates.identity.v1')), guestCopy.value.identity);
+  assert.ok(!JSON.stringify(host.value.state).includes(guest.value.identity.token));
+  assert.ok(!JSON.stringify(host.value.state).includes(guest.value.clientInstance));
+  assert.deepEqual(guestCopy.value.state, host.value.state);
+});
+
+test('active different-instance game duplicates are rejected but a disconnected seat can reload', async t => {
+  const { host, guest, code } = await room(t, { guestProfile: { token: 'cat' } });
+  await host.value.setRules(RULE_PRESETS.quick);
+  await host.value.startGame();
+  const copy = session(guest.value.identity);
+  t.after(() => copy.value.leave());
+  await assert.rejects(copy.value.join(code, 'Copied tab'), /already active in another tab/);
+  assert.ok(guest.value._hostConnection.open);
+  assert.equal(host.value.players.length, 2);
+  assert.deepEqual(host.value._peer.options.config, getIceConfig());
+  assert.deepEqual(guest.value._peer.options.config, getIceConfig());
+  guest.value.leave();
+  await copy.value.join(code, 'Reloaded tab', { token: 'tower' });
+  await flush();
+  assert.equal(copy.value.players[1].token, 'cat');
+  assert.equal(copy.value.players[1].name, 'Guest');
+  assert.deepEqual(copy.value.state.settings, RULE_PRESETS.quick);
+  assert.equal(host.value.players.length, 2);
+});
+
+test('same-instance reconnect can replace a stale channel and repeated hello is idempotent', async t => {
+  const { host, guest } = await room(t);
+  const oldConnection = guest.value._hostConnection;
+  const oldRecord = [...host.value._connections.values()].find(record => record.playerId === guest.value.playerId);
+  guest.value._hostConnection = null; // local ICE restarted while the host still sees the old channel as open
+  guest.value._connectToHost();
+  await flush();
+  assert.ok(oldConnection.closed);
+  assert.ok(guest.value._hostConnection.open);
+  assert.equal(host.value.players.length, 2);
+  const revision = host.value.revision;
+  for (let i = 0; i < 3; i++) guest.value._send(guest.value._hostConnection, {
+    type: 'hello', playerId: guest.value.playerId, token: guest.value.identity.token,
+    clientInstance: guest.value.clientInstance, profile: { name: 'Do not rename', token: 'tower' },
+  });
+  await flush();
+  assert.equal(host.value.revision, revision);
+  assert.equal(host.value.players[1].name, 'Guest');
+  host.value._hello(oldRecord, {
+    playerId: guest.value.playerId, token: guest.value.identity.token,
+    clientInstance: guest.value.clientInstance,
+  });
+  assert.ok(guest.value._hostConnection.open, 'a stale connection cannot reclaim the new connection');
+  assert.equal(host.value.revision, revision);
+});
+
+// Drain promise and queued transport callbacks without waiting on mocked clocks.
+async function settleTransport() { for (let i = 0; i < 30; i++) await Promise.resolve(); }
+
+test('the first dropped welcome is recovered by hello retry without duplicate membership', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 100000 });
+  const host = session(), guest = session();
+  t.after(() => { guest.value.leave(); host.value.leave(); });
+  const code = await host.value.host('Host');
+  const send = host.value._send.bind(host.value);
+  let dropped = false;
+  host.value._send = (conn, data) => {
+    if (data.type === 'state' && !dropped) { dropped = true; return false; }
+    return send(conn, data);
+  };
+  const joining = guest.value.join(code, 'Guest');
+  await settleTransport();
+  assert.ok(dropped);
+  assert.equal(guest.value.state, null);
+  const revision = host.value.revision;
+  t.mock.timers.tick(2000);
+  await settleTransport();
+  await joining;
+  assert.equal(host.value.revision, revision);
+  assert.equal(host.value.players.length, 2);
+  assert.deepEqual(guest.value.state, host.value.state);
+  assert.equal(guest.value._helloTimer, null);
+});
+
+test('a nine-second browser negotiation succeeds rather than being cut off at 6.5 seconds', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 100000 });
+  const host = session(), guest = session();
+  t.after(() => { FakePeer.connectionDelay = 0; guest.value.leave(); host.value.leave(); });
+  const code = await host.value.host('Host');
+  FakePeer.connectionDelay = 9000;
+  const joining = guest.value.join(code, 'Slow network');
+  await settleTransport();
+  t.mock.timers.tick(8000);
+  await settleTransport();
+  assert.ok(!guest.value._hostConnection.closed);
+  t.mock.timers.tick(1000);
+  await settleTransport();
+  await joining;
+  assert.equal(host.value.players.length, 2);
+  assert.ok(guest.statuses.some(status => status.kind === 'negotiating'));
+  assert.ok(guest.statuses.some(status => status.kind === 'handshaking'));
+});
+
+test('a silent open channel is retried and the initial join eventually rejects with handshake evidence', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 100000 });
+  const host = session(), guest = session();
+  t.after(() => { guest.value.leave(); host.value.leave(); });
+  const code = await host.value.host('Host');
+  const send = host.value._send.bind(host.value);
+  host.value._send = (conn, data) => data.type === 'state' ? false : send(conn, data);
+  const joining = assert.rejects(guest.value.join(code, 'Guest'), /did not confirm your seat/);
+  for (let i = 0; i < 61; i++) { await settleTransport(); t.mock.timers.tick(1000); }
+  await settleTransport();
+  await joining;
+  assert.equal(guest.value._timers.size, 0);
+  assert.equal(guest.value._joinWait, null);
+  assert.equal(guest.value._hostConnection, null);
+  assert.equal(host.value.players.length, 2, 'retries preserve the single reserved seat');
+});
+
+test('identity regeneration is bounded if a host keeps rejecting a fresh tab identity', async t => {
+  const host = session(), guest = session();
+  t.after(() => { guest.value.leave(); host.value.leave(); });
+  const code = await host.value.host('Host');
+  let attempts = 0;
+  host.value._hello = record => { attempts++; host.value._send(record.conn, { type: 'identity-conflict' }); };
+  await assert.rejects(guest.value.join(code, 'Guest'), /could not create a separate player identity/);
+  assert.equal(attempts, 3);
+  assert.equal(host.value.players.length, 1);
+});
+
+test('throwing UI callbacks cannot prevent room admission or confirmed snapshots', async t => {
+  const host = session(), guest = session();
+  t.after(() => { guest.value.leave(); host.value.leave(); });
+  const code = await host.value.host('Host');
+  const logged = t.mock.method(console, 'error', () => {});
+  host.value.onState = () => { throw new Error('Host render failed'); };
+  guest.value.onState = () => { throw new Error('Guest render failed'); };
+  guest.value.onStatus = () => { throw new Error('Guest status failed'); };
+  await guest.value.join(code, 'Guest');
+  await host.value.startGame();
+  await host.value.dispatch({ type: 'ROLL' });
+  await flush();
+  assert.equal(guest.value._joinWait, null);
+  assert.deepEqual(guest.value.state, host.value.state);
+  assert.ok(logged.mock.callCount() > 0);
+});
+
+test('a stalled library load times out, cleans up its script, and can be retried', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 100000 });
+  const host = session();
+  const code = await host.value.host('Host');
+  const originalDocument = globalThis.document;
+  const scripts = [];
+  globalThis.document = {
+    createElement: () => ({ removed: false, remove() { this.removed = true; } }),
+    head: { append(script) { scripts.push(script); } },
+  };
+  delete globalThis.Peer;
+  const { RoomSession: LoaderSession } = await import('./network.js?library-timeout-test');
+  globalThis.sessionStorage = { getItem: () => null, setItem: () => {} };
+  const guest = new LoaderSession();
+  t.after(() => { guest.leave(); host.value.leave(); globalThis.Peer = FakePeer; globalThis.document = originalDocument; });
+  const failing = assert.rejects(guest.join(code, 'Guest'), /library took too long/);
+  await settleTransport();
+  assert.equal(scripts.length, 1);
+  t.mock.timers.tick(15000);
+  await settleTransport();
+  await failing;
+  assert.ok(scripts[0].removed);
+  assert.equal(guest._timers.size, 0);
+  assert.equal(guest._openingWait, null);
+  const retry = guest.join(code, 'Guest');
+  await settleTransport();
+  assert.equal(scripts.length, 2);
+  globalThis.Peer = FakePeer;
+  scripts[1].onload();
+  await retry;
+  assert.equal(host.value.players.length, 2);
 });
