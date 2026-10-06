@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Istanbul Exchange — Ömer Tepe</title>
+  <meta name="description" content="An Istanbul property-trading board game for 2–6 friends. Create a room, share a link, and play together online.">
+  <link rel="canonical" href="https://omertepe.com/monopoly/">
+  <meta property="og:title" content="Istanbul Exchange — Ömer Tepe">
+  <meta property="og:description" content="Own a little of Istanbul. An online property-trading game for 2–6 friends.">
+  <meta property="og:url" content="https://omertepe.com/monopoly/">
+  <meta property="og:type" content="website">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <script>try{var s=localStorage.getItem('omt-theme');if(s==='light'||s==='dark')document.documentElement.style.colorScheme=s;}catch(e){}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;450;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/site.css">
+  <link rel="stylesheet" href="./game.css">
+  <script type="module" src="./app.js"></script>
+</head>
+<body>
+<div class="page">
+  <div class="game-container">
+    <header class="game-header">
+      <div class="header-left">
+        <h1><a href="/">Mehmet Ömer Tepe</a></h1>
+        <p class="tagline">Istanbul Exchange <span class="edition">/ 01</span></p>
+      </div>
+      <div class="toggles">
+        <div class="toggle-row" aria-label="Language"><button data-lang="en" title="English">en</button><button data-lang="tr" title="Türkçe">tr</button></div>
+        <div class="toggle-row" aria-label="Color theme"><button data-theme="system">system</button><button data-theme="light">light</button><button data-theme="dark">dark</button></div>
+      </div>
+    </header>
+    <div class="game-nav"><nav class="site-nav" aria-label="Site"><a href="/" data-copy="home">home</a><a href="/projects/" data-copy="projects">projects</a><a href="/resume/" data-copy="resume">resume</a><a href="./" class="active" aria-current="page" data-copy="play">play</a></nav><button class="text-button" id="rules-button" data-copy="howTo">how to play ↗</button></div>
+    <main id="app">
+      <div class="table-heading"><span class="eyebrow" data-copy="table">ISTANBUL / THE TABLE</span><span id="connection" role="status">2–6 players · online or local</span></div>
+      <div class="game-layout">
+        <section class="board-area" aria-label="Game board">
+          <div class="board" id="board"><div class="board-center" id="board-center"></div></div>
+          <div class="board-foot"><span data-copy="boardHint">Select a space to inspect its deed.</span><span class="mono">41.0082° N / 28.9784° E</span></div>
+        </section>
+        <aside class="sidebar" aria-label="Game controls"><div id="room-panel"></div><div id="players-panel"></div><div id="property-panel"></div><div id="portfolio-panel"></div><div id="activity-panel"></div></aside>
+      </div>
+    </main>
+    <footer class="game-footer"><span>© 2026 Mehmet Ömer Tepe</span><span data-copy="footer">A property game, made for friends.</span><a href="https://github.com/MOmerTepe/MOmerTepe.github.io/tree/main/monopoly">source ↗</a></footer>
+  </div>
+</div>
+<div id="notice" role="alert" hidden></div>
+<dialog id="modal"><div class="modal-top"><span class="eyebrow" id="modal-title"></span><button class="icon-button" id="close-modal" aria-label="Close dialog">×</button></div><div id="modal-content"></div></dialog>
+<noscript>This game needs JavaScript. Please enable it in your browser.</noscript>
+</body>
+</html>

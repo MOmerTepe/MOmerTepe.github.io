@@ -23,9 +23,23 @@
   var ANALYTICS_SRC = 'https://gc.zgo.at/count.js';
   var ANALYTICS_ENDPOINT = 'https://omertepe.goatcounter.com/count';
 
-  // Projects not (yet) published on GitHub. Rendered from this catalog;
-  // once one gets a repo, delete it here and add its name to REPO_CATEGORIES.
+  // Projects hosted on this site or not (yet) published in their own repo.
+  // Once one gets a separate repo, map its name in REPO_CATEGORIES instead.
   var LOCAL_PROJECTS = [
+    {
+      id: 'istanbul-exchange',
+      name: 'Istanbul Exchange',
+      cat: 'other',
+      sortYear: 2026,
+      url: '/monopoly/',
+      internal: true,
+      actionLabel: 'playLabel',
+      meta: { en: '2026 · 2–6 players', tr: '2026 · 2–6 oyuncu' },
+      desc: {
+        en: 'A property-trading board game set around Istanbul. Gather friends, share a room, and buy your way across the city — right in the browser.',
+        tr: 'İstanbul sokaklarında geçen bir emlak alım satım oyunu. Arkadaşlarını topla, oda bağlantısını paylaş ve şehrin semtlerini satın al — doğrudan tarayıcıda.'
+      }
+    },
     {
       id: 'quant-trading-system',
       cat: 'cvml',
@@ -108,9 +122,9 @@
     }
   };
 
-  // Curated rows for the home page (no API call needed there);
-  // only projects with a case-study page belong here.
+  // Curated rows for the home page (no API call needed there).
   var FEATURED = [
+    findLocal('istanbul-exchange'),
     OPENTESLACAM_STATIC,
     findLocal('vr-fullbody-tracking'),
     DEATHBYMEDIA_STATIC
@@ -121,10 +135,11 @@
       titleHome: 'Ömer Tepe',
       titleProjects: 'Projects — Ömer Tepe',
       titleResume: 'Resume — Ömer Tepe',
+      titleGame: 'Istanbul Exchange — Ömer Tepe',
       title404: '404 — Ömer Tepe',
       tagline: 'EEE student · computer vision · Istanbul, TR',
       themeSystem: 'system', themeLight: 'light', themeDark: 'dark',
-      navHome: 'home', navProjects: 'projects', navResume: 'resume',
+      navHome: 'home', navProjects: 'projects', navResume: 'resume', navPlay: 'play',
       aboutH: 'About', contactH: 'Contact',
       aboutP1: "I'm an Electrical & Electronics Engineering student at Istanbul Bilgi University, currently focused on computer vision.",
       aboutP2a: "Nearly everything I build starts as a fix for a problem I've actually run into. ",
@@ -154,6 +169,7 @@
       nfMsg: "This page doesn't exist. Maybe it moved; maybe it never did.",
       backHome: 'back to home →',
       writeupLabel: 'writeup →',
+      playLabel: 'play →',
       titleVrp: 'vr-fullbody-tracking — Ömer Tepe',
       vrpLede: 'Commercial full-body VR trackers can cost more than the headset, and single-camera tracking dies the moment you turn around. This project gets full-body presence in SteamVR from two ordinary cameras and a GPU that was already in the PC.',
       vrpStat1l: 'end-to-end latency', vrpStat2l: 'tracked joints', vrpStat3l: 'camera views', vrpStat4l: 'tensor-core inference',
@@ -213,10 +229,11 @@
       titleHome: 'Ömer Tepe',
       titleProjects: 'Projeler — Ömer Tepe',
       titleResume: 'Özgeçmiş — Ömer Tepe',
+      titleGame: 'Istanbul Exchange — Ömer Tepe',
       title404: '404 — Ömer Tepe',
       tagline: 'EEE öğrencisi · bilgisayarlı görü (computer vision) · İstanbul, TR',
       themeSystem: 'sistem', themeLight: 'açık', themeDark: 'koyu',
-      navHome: 'ana sayfa', navProjects: 'projeler', navResume: 'özgeçmiş',
+      navHome: 'ana sayfa', navProjects: 'projeler', navResume: 'özgeçmiş', navPlay: 'oyna',
       aboutH: 'Hakkında', contactH: 'İletişim',
       aboutP1: "İstanbul Bilgi Üniversitesi'nde Elektrik-Elektronik Mühendisliği öğrencisiyim; şu sıralar ağırlıklı olarak bilgisayarlı görü (computer vision) üzerine çalışıyorum.",
       aboutP2a: 'Yaptığım hemen her şey, gerçekten karşılaştığım bir sorunu çözmek için ortaya çıkıyor. ',
@@ -246,6 +263,7 @@
       nfMsg: 'Böyle bir sayfa yok. Belki taşındı, belki hiç olmadı.',
       backHome: 'ana sayfaya dön →',
       writeupLabel: 'detaylar →',
+      playLabel: 'oyna →',
       titleVrp: 'vr-fullbody-tracking — Ömer Tepe',
       vrpLede: "Ticari tüm vücut VR takipçileri başlığın kendisinden pahalıya gelebiliyor; tek kameralı takip ise arkanızı döndüğünüz anda kopuyor. Bu proje, SteamVR'da tüm vücut varlığını iki sıradan kamera ve zaten kasada duran bir GPU ile sağlıyor.",
       vrpStat1l: 'uçtan uca gecikme', vrpStat2l: 'takip edilen eklem', vrpStat3l: 'kamera görüşü', vrpStat4l: 'tensor-core çıkarımı',
@@ -303,7 +321,7 @@
     }
   };
 
-  var TITLE_KEYS = { home: 'titleHome', projects: 'titleProjects', resume: 'titleResume', '404': 'title404' };
+  var TITLE_KEYS = { home: 'titleHome', projects: 'titleProjects', resume: 'titleResume', game: 'titleGame', '404': 'title404' };
 
   var page = document.body.getAttribute('data-page') || 'home';
 
@@ -379,11 +397,12 @@
     line1.className = 'repo-line1';
     var name = document.createElement('span');
     name.className = 'repo-name';
-    name.textContent = isCatalog ? entry.id : entry.name;
+    name.textContent = isCatalog ? (entry.name || entry.id) : entry.name;
     var meta = document.createElement('span');
     meta.className = 'repo-meta';
     var metaText = isCatalog ? (entry.meta[state.lang] || entry.meta.en) : formatRepoMeta(entry, t);
-    if (hasWriteup) metaText += ' · ' + t.writeupLabel;
+    if (entry.actionLabel) metaText += ' · ' + t[entry.actionLabel];
+    else if (hasWriteup) metaText += ' · ' + t.writeupLabel;
     meta.textContent = metaText;
     line1.appendChild(name);
     line1.appendChild(meta);
