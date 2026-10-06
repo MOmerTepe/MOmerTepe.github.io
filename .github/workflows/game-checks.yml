@@ -14,5 +14,5 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - run: node --check monopoly/app.js
+      - run: for file in monopoly/*.js; do node --check "$file" || exit 1; done
       - run: node --test monopoly/tests/*.test.mjs monopoly/network.test.mjs

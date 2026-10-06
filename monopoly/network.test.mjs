@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
 import { RoomSession } from './network.js';
+import { DEFAULT_RULES, RULE_PRESETS } from './rules.js';
+import { PLAYER_COLORS, TOKEN_OPTIONS, sanitizeProfile } from './cosmetics.js';
 
 // A deterministic transport double exercises the actual RoomSession and engine.
 // Browser-to-browser WebRTC is verified separately; this suite tests authority,
@@ -71,16 +73,17 @@ function session() {
   const states = [];
   const errors = [];
   const statuses = [];
-  const value = new RoomSession({ onState: state => states.push(state), onError: message => errors.push(message), onStatus: status => statuses.push(status) });
-  return { value, states, errors, statuses };
+  const reactions = [];
+  const value = new RoomSession({ onState: state => states.push(state), onError: message => errors.push(message), onStatus: status => statuses.push(status), onReaction: event => reactions.push(event) });
+  return { value, states, errors, statuses, reactions };
 }
 
-async function room(t) {
+async function room(t, { hostProfile = {}, guestProfile = {} } = {}) {
   const host = session();
   const guest = session();
   t.after(() => { guest.value.leave(); host.value.leave(); });
-  const code = await host.value.host('Host');
-  await guest.value.join(code, 'Guest');
+  const code = await host.value.host('Host', hostProfile);
+  await guest.value.join(code, 'Guest', guestProfile);
   await flush();
   return { host, guest, code };
 }
@@ -179,4 +182,121 @@ test('malformed action and oversized name are handled', async t => {
   t.after(() => another.value.leave());
   await another.value.join(host.value.roomCode.toLowerCase().replace('-', ' '), 'N'.repeat(100));
   assert.equal(host.value.players.at(-1).name.length, 24);
+});
+
+test('host rules are validated, synchronized, and are the only source for starting the game', async t => {
+  const { host, guest } = await room(t);
+  assert.deepEqual(host.value.state.settings, DEFAULT_RULES);
+  assert.deepEqual(guest.value.state.settings, DEFAULT_RULES);
+  await assert.rejects(guest.value.setRules({ startingCash: 5000 }), /Only the host/);
+  await assert.rejects(guest.value._request('rules', { options: { startingCash: 5000 } }), /Only the host/);
+  const before = structuredClone(host.value.state);
+  for (const options of [{ startingCash: -1 }, { salary: '300' }, { auctions: 1 }, { unknownRule: true }, null]) {
+    await assert.rejects(host.value.setRules(options), /Invalid|Unknown|valid/i);
+    assert.deepEqual(host.value.state, before);
+  }
+  await host.value.setRules(RULE_PRESETS.quick);
+  await host.value.setRules({ freeParkingPot: true });
+  await flush();
+  const expected = { ...RULE_PRESETS.quick, freeParkingPot: true };
+  assert.deepEqual(guest.value.state.settings, expected);
+  await host.value.startGame({ startingCash: 5000, salary: 500 });
+  await flush();
+  assert.deepEqual(host.value.state.settings, expected);
+  assert.deepEqual(guest.value.state, host.value.state);
+  assert.ok(host.value.state.players.every(player => player.cash === expected.startingCash));
+  await assert.rejects(host.value.setRules(DEFAULT_RULES), /lobby/);
+});
+
+test('profiles sanitize to the fixed choices, propagate, and remain bound to the connection seat', async t => {
+  const { host, guest } = await room(t, {
+    hostProfile: { token: 'cat', color: PLAYER_COLORS[3] },
+    guestProfile: { token: 'tea', color: PLAYER_COLORS[6] },
+  });
+  assert.deepEqual(TOKEN_OPTIONS.map(token => token.id), ['ferry', 'cat', 'tower', 'tulip', 'tea', 'tram']);
+  assert.equal(host.value.players[0].token, 'cat');
+  assert.equal(guest.value.players[1].token, 'tea');
+  assert.ok(!JSON.stringify(host.value.state).includes(host.value.identity.token));
+  assert.ok(!JSON.stringify(guest.value.state).includes(guest.value.identity.token));
+  await host.value.updateProfile({ name: '  New\u0000 Host  ', token: 'tower' });
+  await guest.value.updateProfile({ name: 'G'.repeat(100), token: 'tram', color: PLAYER_COLORS[3], id: host.value.playerId, cash: 10000 });
+  await flush();
+  assert.equal(host.value.players[0].name, 'New Host');
+  assert.equal(host.value.players[1].name, 'G'.repeat(24));
+  assert.equal(host.value.players[1].token, 'tram');
+  assert.equal(host.value.players[1].color, host.value.players[0].color, 'matching colors are allowed');
+  assert.equal(host.value.players[1].id, guest.value.playerId);
+  assert.equal(host.value.players[1].cash, undefined);
+  await guest.value._request('profile', { playerId: host.value.playerId, profile: { token: 'tulip' } });
+  await flush();
+  assert.equal(host.value.players[0].token, 'tower');
+  assert.equal(host.value.players[1].token, 'tulip');
+  await guest.value.updateProfile({ token: '<svg>', color: 'url(evil)', name: '\u0000' });
+  await flush();
+  assert.equal(host.value.players[1].token, 'tulip');
+  assert.equal(host.value.players[1].color, PLAYER_COLORS[3]);
+  await assert.rejects(guest.value._request('profile', { profile: [] }), /valid player profile/);
+  assert.deepEqual(guest.value.state, host.value.state);
+  assert.deepEqual(Object.keys(sanitizeProfile({ id: 'spoof', cash: 9999 })), ['name', 'token', 'color']);
+});
+
+test('rejoining preserves chosen appearance and current rules, and profiles freeze for the game', async t => {
+  const { host, guest, code } = await room(t, { guestProfile: { token: 'cat', color: PLAYER_COLORS[7] } });
+  await host.value.setRules(RULE_PRESETS.generous);
+  guest.value.leave();
+  await guest.value.join(code, 'Different name', { token: 'tower', color: PLAYER_COLORS[0] });
+  await flush();
+  assert.equal(host.value.players[1].name, 'Guest');
+  assert.equal(guest.value.players[1].token, 'cat');
+  assert.equal(guest.value.players[1].color, PLAYER_COLORS[7]);
+  assert.deepEqual(guest.value.state.settings, RULE_PRESETS.generous);
+  await host.value.startGame();
+  await flush();
+  assert.equal(guest.value.state.players[1].token, 'cat');
+  const before = structuredClone(host.value.state);
+  await assert.rejects(guest.value.updateProfile({ token: 'tea' }), /lobby/);
+  await assert.rejects(host.value.updateProfile({ color: PLAYER_COLORS[0] }), /lobby/);
+  await assert.rejects(guest.value._request('profile', { profile: { token: 'tea' } }), /locked/);
+  assert.deepEqual(host.value.state, before);
+  guest.value.leave();
+  await guest.value.join(code, 'Another name', { token: 'ferry' });
+  await flush();
+  assert.equal(guest.value.state.players[1].token, 'cat');
+  assert.deepEqual(guest.value.state.settings, RULE_PRESETS.generous);
+});
+
+test('quick reactions reach every player once, are seat-bound and rate limited without changing the game', async t => {
+  const { host, guest, code } = await room(t);
+  await host.value.startGame();
+  await flush();
+  const before = structuredClone(host.value.state);
+  await guest.value._request('reaction', { playerId: host.value.playerId, reaction: 'wave' });
+  await flush();
+  assert.equal(host.reactions.length, 1);
+  assert.deepEqual(guest.reactions, host.reactions);
+  assert.equal(host.reactions[0].playerId, guest.value.playerId);
+  assert.equal(host.reactions[0].reaction, 'wave');
+  assert.deepEqual(Object.keys(host.reactions[0]), ['playerId', 'reaction', 'id']);
+  await assert.rejects(guest.value.react('gg'), /two seconds/);
+  await assert.rejects(guest.value.react('custom chat message'), /supported reaction/);
+  await host.value.react('wow');
+  await flush();
+  assert.deepEqual(guest.reactions, host.reactions);
+  assert.equal(guest.reactions.length, 2);
+  guest.value._receiveFromHost({ protocol: 2, type: 'reaction', event: host.reactions[0] });
+  assert.equal(guest.reactions.length, 2);
+  await assert.rejects(host.value.react('lucky'), /two seconds/);
+  assert.deepEqual(host.value.state, before);
+  guest.value.leave();
+  await guest.value.join(code, 'Guest');
+  await assert.rejects(guest.value.react('gg'), /two seconds/);
+});
+
+test('protocol v2 isolates rooms and reports incompatible wire messages clearly', async t => {
+  const { host, guest } = await room(t);
+  assert.match(host.value._peer.id, /^omertepe-estates-v2-/);
+  guest.value._hostConnection.send({ protocol: 1, type: 'hello' });
+  await flush();
+  assert.ok(guest.errors.some(message => /different game version.*Refresh/.test(message)));
+  assert.equal(guest.value.state, null);
 });

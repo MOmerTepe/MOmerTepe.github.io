@@ -1,19 +1,28 @@
 # Istanbul Exchange
 
-An original Istanbul-themed property-trading game for 2–6 friends, at `/monopoly/`. The interface follows omertepe.com's IBM Plex typography, quiet borders, light/dark themes, and English/Turkish controls. All money and properties are fictional game assets; there are no real-money purchases or wagering.
+An original Istanbul-themed property-trading game for 2–6 friends, at `/monopoly/`. The interface follows omertepe.com's IBM Plex typography, quiet borders, light/dark themes, and English/Turkish controls. Play in an online room or take turns on one device. All money and properties are fictional game assets; there are no real-money purchases or wagering.
+
+## The table and your pawn
+
+- Choose a ferry, cat, tower, tulip, tea glass, or tram pawn in one of eight colors. Online players choose their own appearance in the lobby; local players can each have a different pawn.
+- The optional 3D board presents modeled pawns, houses, hotels, and Istanbul scenery, with animated dice and movement. Drag to rotate, use the wheel or controls to zoom, and select a space to inspect its deed. The 2D board provides native keyboard-accessible space buttons and the same game controls, and remains available when 3D cannot load.
+- Switch the board palette and 3D/2D view independently of the other players. These choices do not affect rules or room state.
+- Sound is off until enabled. Reduced motion follows the operating-system preference and can also be selected in the game. Animation events come from the game state so displays can animate movement without changing the underlying rules.
 
 ## Play online
 
-1. Open the game, enter your name, and create a room.
-2. Share the room link with friends. They open it, enter their names, and join.
-3. The host starts after at least two players have joined.
+1. Open the game, enter your name, choose your pawn and color, and create a room.
+2. Share the room link with friends. They open it, choose their names and pawns, and join.
+3. The host chooses the room rules in the lobby and starts after at least two players have joined. Everyone receives the same validated settings; rules and pawn choices are fixed once the game starts.
 4. Keep the host's tab open for the entire game.
 
 The host's browser maintains the room and validates player actions. Refreshing or closing the host tab ends that room: there is no persistent server or automatic host migration. Guests automatically retry a lost connection for up to 90 seconds. A returning guest can manually rejoin from the original browser tab/session while the host is still present. Room links use an eight-character code, such as `#room=ABCD-2345`, and are intended to be shared privately with friends.
 
 A disconnected player keeps their seat after the game starts, and play waits when their turn arrives. There is no automatic turn timer or replacement bot. The host can remove disconnected seats in the lobby before starting.
 
-## Rules
+## Classic rules
+
+Classic is the default preset. The settings listed in the next section can change its cash amounts and optional rules.
 
 - Start with ₺1,500. Move around 40 spaces and collect ₺200 when passing START. The last player who has not gone bankrupt wins.
 - Buy unowned properties when you land on them, or send them to a turn-based auction. Everyone may bid, including the player who declined the purchase.
@@ -23,7 +32,28 @@ A disconnected player keeps their seat after the game starts, and play waits whe
 - Doubles earn another roll; three consecutive doubles send you to Detour. Leave by rolling doubles, paying ₺50, or using a pass. A third failed attempt requires the ₺50 payment before moving.
 - If you owe more cash than you have, sell buildings, mortgage assets, or negotiate a trade. The debt settles when enough cash is available, or you can declare bankruptcy. Assets pass to the creditor or return to the bank, as appropriate. You can sell every building in a color group at once, including when the bank has too few houses to downgrade a hotel individually.
 
-Some rules deliberately keep play simple: event cards are independent random draws, Tea Break has no cash jackpot, and trading a mortgaged property adds no transfer fee. On bankruptcy, buildings are sold back at half their cost. There are no bots or time limits.
+Some rules deliberately keep play simple: event cards are independent random draws and trading a mortgaged property adds no transfer fee. Classic disables the Tea Break pot. On bankruptcy to another player, buildings are liquidated at half cost and their value passes to the creditor; on bankruptcy to the bank, buildings return to its supply and properties become unowned. There are no bots or time limits.
+
+## Custom rules
+
+Choose a preset, then adjust individual rules before starting. Only the room host can change online rules; local games use the settings selected before play. The engine validates the following schema and rejects unsupported values instead of coercing them.
+
+| Setting | Classic default | Allowed values or behavior |
+| --- | --- | --- |
+| `startingCash` | ₺1,500 | ₺500, ₺1,000, ₺1,500, ₺2,000, ₺2,500, ₺3,000, ₺5,000 |
+| `salary` | ₺200 | ₺0, ₺100, ₺200, ₺300, ₺400, ₺500 when passing START |
+| `bail` | ₺50 | ₺0, ₺25, ₺50, ₺100, ₺200 to leave Detour |
+| `rentMultiplier` | 1× | 0.5×, 1×, 1.5×, 2×; applies to districts, stations, and utilities, rounded up to a whole lira |
+| `auctions` | On | On: declined purchases open an auction. Off: the property stays with the bank and play continues. |
+| `freeParkingPot` | Off | When on, paid board taxes feed the Tea Break pot; landing there collects and clears it. |
+| `doubleSalaryOnGo` | Off | When on, landing exactly on START receives twice the configured salary. |
+| `evenBuilding` | On | When on, build and sell evenly within a color group. Off permits any building order within the group. |
+
+The Quick preset starts with ₺1,000, pays ₺100 at START, and uses 1.5× rent. Its other settings match Classic. The Generous preset starts with ₺2,500, pays ₺300 at START, charges ₺25 for Detour, and enables both the Tea Break pot and double salary for exact START landings. Its other settings match Classic.
+
+The Tea Break pot receives only money actually paid for the City Tax and Restoration Levy board spaces. An unpaid tax enters the pot when the debt settles; bankruptcy contributes only the cash paid. Card fees, repairs, and bail do not feed the pot. START cards use the configured salary and exact-landing bonus without paying it twice; a next-station card combines its double rent with the configured rent multiplier before rounding.
+
+Custom building order never makes the building supply unlimited. All games have 32 houses and 12 hotels, require a complete unmortgaged color group before building, and allow at most four houses followed by one hotel per district. Selling one hotel still requires four available houses; selling the entire group's buildings remains available when the bank lacks houses for an individual downgrade. Rules remain fixed for the duration of the game.
 
 ## Run and publish
 
@@ -39,7 +69,9 @@ For deployment, publish this repository through its existing GitHub Pages config
 
 ## How multiplayer works
 
-GitHub Pages serves the HTML, CSS, JavaScript, and vendored PeerJS 1.5.5 browser library. PeerJS signaling introduces players, then WebRTC data channels carry room state and player commands. The host applies commands to one authoritative game state and distributes updates to guests.
+GitHub Pages serves the HTML, CSS, JavaScript, vendored PeerJS 1.5.5 browser library, and vendored Three.js 0.186.1 rendering library. Both libraries retain their MIT licenses in `vendor/`. Three.js is loaded for the 3D view; it does not change the transport or require a server.
+
+PeerJS signaling introduces players, then WebRTC data channels carry room state and player commands. The host applies commands to one authoritative game state and distributes updates to guests. Online protocol version 2 includes validated room rules and pawn cosmetics; its room identifiers use the `omertepe-estates-v2-` prefix. Older protocol versions cannot join these rooms, so all participants should reload the current page before joining.
 
 WebRTC still needs network infrastructure: signaling coordinates connections, STUN discovers addresses, and TURN relays traffic when a direct connection is unavailable. The pinned PeerJS library's defaults supply:
 
@@ -53,17 +85,22 @@ The host and guests run code in their own browsers. This is a casual game for tr
 
 ## Privacy and storage
 
-Theme and language choices use the same browser-local preferences as the rest of the site. The game stores a random player ID and reconnect token in `sessionStorage` under `omertepe.estates.identity.v1`. The token authenticates a reconnect to the host and is not broadcast to the other players. This is not an account or a saved game; clearing the session storage removes that tab's reconnect identity.
+Theme and language choices use the same browser-local preferences as the rest of the site. Pawn appearance, view, board palette, optional sound, and motion preferences are also saved locally in the browser. These preferences do not save an active game. The game stores a random player ID and reconnect credential in `sessionStorage` under `omertepe.estates.identity.v1`. That private credential authenticates a reconnect to the host and is not broadcast to the other players; a public pawn's `token` field is only its appearance identifier. This is not an account or a saved game; clearing the session storage removes that tab's reconnect identity.
 
-Display names, room membership, actions, and game state are exchanged with the room host and players. Signaling and relay services necessarily process connection metadata, and WebRTC can expose network information such as IP addresses to participating peers. The game page adds no analytics or tracking cookies. PeerJS is vendored locally, so loading the multiplayer library does not require a third-party CDN; online room connections still require the services listed above.
+Display names, pawn choices, room membership, rules, actions, and game state are exchanged with the room host and players. Signaling and relay services necessarily process connection metadata, and WebRTC can expose network information such as IP addresses to participating peers. The game page adds no analytics or tracking cookies. PeerJS and Three.js are vendored locally, so loading their files does not require a third-party CDN; online room connections still require the services listed above.
 
 ## Files
 
 - `index.html`, `game.css`, `app.js`: the game page, responsive board, and controls.
 - `board.js`: Istanbul spaces, prices, rents, and color groups.
-- `engine.js`: game state, turn validation, property actions, and rules.
+- `engine.js`: game state, turn validation, property actions, rules, and deterministic animation events.
+- `rules.js`: validated room rule schema and Classic, Quick, and Generous presets.
+- `cosmetics.js`: six pawn identifiers, eight colors, and sanitized player profiles.
+- `graphics.js`: pawn/building graphics and optional audio and motion effects.
+- `scene.js`: Three.js board, modeled city and pieces, movement animation, space selection, and camera controls.
 - `network.js`: rooms, host validation, state synchronization, and reconnects.
 - `vendor/peerjs.min.js`, `vendor/LICENSE.peerjs`: pinned PeerJS 1.5.5 and its license.
+- `vendor/three.module.js`, `vendor/three.core.js`, `vendor/LICENSE.three`: pinned Three.js 0.186.1 and its MIT license.
 - `tests/`: deterministic engine checks.
 - `network.test.mjs`: transport checks with a simulated PeerJS network.
 
@@ -76,4 +113,4 @@ node --test monopoly/tests/*.test.mjs
 node --test monopoly/network.test.mjs
 ```
 
-To check online play, open separate browser sessions, create a room in one, join from the other, and verify both players see the same turn and balance changes. Test again with devices on different networks before relying on a chosen relay configuration; a same-device test does not establish cross-network reachability.
+The automated checks cover the game engine, rule validation, movement events, and simulated room transport. To check online play, open separate browser sessions, create a room in one, join from the other, and verify both players see the same pawn choices, rules, turn, buildings, and balance changes. Exercise both 3D and 2D views, keyboard controls, reduced motion, and sound opt-in. Test again with devices on different networks before relying on a chosen relay configuration; a same-device test does not establish cross-network reachability.
