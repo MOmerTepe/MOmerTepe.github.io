@@ -15,4 +15,7 @@ jobs:
         with:
           node-version: '24'
       - run: for file in monopoly/*.js; do node --check "$file" || exit 1; done
-      - run: node --test monopoly/tests/*.test.mjs monopoly/network.test.mjs
+      - run: node --test monopoly/tests/*.test.mjs monopoly/network.test.mjs monopoly/ice-config.test.mjs
+      - name: Require configured TURN relay before release
+        run: |
+          node --input-type=module -e "import { getIceConfig } from './monopoly/ice-config.js'; getIceConfig({ requireRelay: true });"
