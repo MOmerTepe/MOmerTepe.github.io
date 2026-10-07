@@ -27,34 +27,6 @@
   // Once one gets a separate repo, map its name in REPO_CATEGORIES instead.
   var LOCAL_PROJECTS = [
     {
-      id: 'secret-hitler',
-      name: 'Secret Hitler',
-      cat: 'other',
-      sortYear: 2026,
-      url: '/secret-hitler/',
-      internal: true,
-      actionLabel: 'playLabel',
-      meta: { en: '2026 · 5–10 players', tr: '2026 · 5–10 oyuncu' },
-      desc: {
-        en: 'A free, unofficial online adaptation of the social deduction game. Private roles, hidden policies, simultaneous votes, and a table for your friends.',
-        tr: 'Gizli roller, saklı politikalar, eşzamanlı oylar ve arkadaşların için bir masa. Sosyal çıkarım oyununun ücretsiz, resmî olmayan çevrimiçi uyarlaması.'
-      }
-    },
-    {
-      id: 'istanbul-exchange',
-      name: 'Istanbul Exchange',
-      cat: 'other',
-      sortYear: 2026,
-      url: '/monopoly/',
-      internal: true,
-      actionLabel: 'playLabel',
-      meta: { en: '2026 · 2–6 players', tr: '2026 · 2–6 oyuncu' },
-      desc: {
-        en: 'A property-trading board game set around Istanbul. Gather friends, share a room, and buy your way across the city — right in the browser.',
-        tr: 'İstanbul sokaklarında geçen bir emlak alım satım oyunu. Arkadaşlarını topla, oda bağlantısını paylaş ve şehrin semtlerini satın al — doğrudan tarayıcıda.'
-      }
-    },
-    {
       id: 'quant-trading-system',
       cat: 'cvml',
       sortYear: 2027,
@@ -138,7 +110,6 @@
 
   // Curated rows for the home page (no API call needed there).
   var FEATURED = [
-    findLocal('istanbul-exchange'),
     OPENTESLACAM_STATIC,
     findLocal('vr-fullbody-tracking'),
     DEATHBYMEDIA_STATIC
@@ -146,14 +117,46 @@
 
   var strings = {
     en: {
+      gamesH: "Games",
+      gamesTagline: "Games for friends",
+      gamesTitle: "Good company. Friendly competition.",
+      gamesIntro: "Two tables, one place. Pick a game, share a room, and bring your friends.",
+      gamesNote: "Free to play · no accounts needed",
+      exchangeGenre: "Property & strategy",
+      exchangePlayers: "2–6 players",
+      exchangeModes: "Online or local",
+      exchangeDesc: "Buy Istanbul neighborhoods, strike deals, and build your way across the city. A familiar property game with a local address.",
+      exchangeFeature1: "3D tabletop",
+      exchangeFeature2: "Custom rules",
+      exchangeFeature3: "Local play",
+      exchangePlay: "Play Istanbul Exchange →",
+      secretGenre: "Bluffing & deduction",
+      secretPlayers: "5–10 players",
+      secretModes: "Online + solo practice",
+      secretDesc: "Private identities, public decisions. Elect a government, pass policies, and work out whose story you can trust.",
+      secretFeature1: "Hidden roles",
+      secretFeature2: "Table chat",
+      secretFeature3: "Practice bots",
+      secretPlay: "Play Secret Hitler →",
+      secretCredit: "Unofficial adaptation · original game & credits ↗",
+      gamesTogether: "Getting the table together",
+      gamesStep1: "Choose your game",
+      gamesStep1Text: "Check the player count. Istanbul Exchange also works on one shared device; Secret Hitler has solo practice.",
+      gamesStep2: "Share the invitation",
+      gamesStep2Text: "Create an online room and send its invitation to your friends. Everyone joins in their own browser.",
+      gamesStep3: "Keep the table open",
+      gamesStep3Text: "The host keeps their tab open throughout the game. Bring a voice call for the conversation.",
+      gamesHomeText: "Property deals or hidden identities. Browser games for an evening with friends.",
+      gamesBrowse: "choose a game →",
+      projectsGamesLink: "Looking for something to play? Visit Games →",
       titleHome: 'Ömer Tepe',
       titleProjects: 'Projects — Ömer Tepe',
       titleResume: 'Resume — Ömer Tepe',
-      titleGame: 'Istanbul Exchange — Ömer Tepe',
+      titleGames: 'Games — Ömer Tepe',
       title404: '404 — Ömer Tepe',
       tagline: 'EEE student · computer vision · Istanbul, TR',
       themeSystem: 'system', themeLight: 'light', themeDark: 'dark',
-      navHome: 'home', navProjects: 'projects', navResume: 'resume', navPlay: 'play',
+      navHome: 'home', navProjects: 'projects', navResume: 'resume', navGames: 'games',
       aboutH: 'About', contactH: 'Contact',
       aboutP1: "I'm an Electrical & Electronics Engineering student at Istanbul Bilgi University, currently focused on computer vision.",
       aboutP2a: "Nearly everything I build starts as a fix for a problem I've actually run into. ",
@@ -240,14 +243,46 @@
       months: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
     },
     tr: {
+      gamesH: "Oyunlar",
+      gamesTagline: "Arkadaşlar için oyunlar",
+      gamesTitle: "İyi arkadaşlar. Tatlı rekabet.",
+      gamesIntro: "İki masa, tek adres. Oyununu seç, bir oda paylaş ve arkadaşlarını davet et.",
+      gamesNote: "Ücretsiz · hesap gerekmez",
+      exchangeGenre: "Emlak & strateji",
+      exchangePlayers: "2–6 oyuncu",
+      exchangeModes: "Çevrimiçi veya yerel",
+      exchangeDesc: "İstanbul semtlerini satın al, anlaşmalar yap ve şehre binalarını dik. Tanıdık bir emlak oyunu, bu kez İstanbul’da.",
+      exchangeFeature1: "3B oyun masası",
+      exchangeFeature2: "Özel kurallar",
+      exchangeFeature3: "Yerel oyun",
+      exchangePlay: "Istanbul Exchange oyna →",
+      secretGenre: "Blöf & çıkarım",
+      secretPlayers: "5–10 oyuncu",
+      secretModes: "Çevrimiçi + tek kişilik alıştırma",
+      secretDesc: "Gizli kimlikler, ortak kararlar. Bir hükümet seç, politikaları geçir ve kimin hikâyesine güveneceğine karar ver.",
+      secretFeature1: "Gizli roller",
+      secretFeature2: "Masa sohbeti",
+      secretFeature3: "Alıştırma botları",
+      secretPlay: "Secret Hitler oyna →",
+      secretCredit: "Resmî olmayan uyarlama · orijinal oyun ve katkılar ↗",
+      gamesTogether: "Masayı kurmak",
+      gamesStep1: "Oyununu seç",
+      gamesStep1Text: "Oyuncu sayısını kontrol et. Istanbul Exchange tek cihazda da oynanır; Secret Hitler’da tek kişilik alıştırma var.",
+      gamesStep2: "Daveti paylaş",
+      gamesStep2Text: "Çevrimiçi bir oda oluştur ve davetini arkadaşlarına gönder. Herkes kendi tarayıcısından katılır.",
+      gamesStep3: "Masayı açık tut",
+      gamesStep3Text: "Ev sahibi oyun boyunca sekmesini açık tutsun. Sohbet için bir sesli görüşme açın.",
+      gamesHomeText: "Emlak pazarlıkları veya gizli kimlikler. Arkadaşlarla bir akşam için tarayıcı oyunları.",
+      gamesBrowse: "bir oyun seç →",
+      projectsGamesLink: "Oynamak için mi geldin? Oyunlara göz at →",
       titleHome: 'Ömer Tepe',
       titleProjects: 'Projeler — Ömer Tepe',
       titleResume: 'Özgeçmiş — Ömer Tepe',
-      titleGame: 'Istanbul Exchange — Ömer Tepe',
+      titleGames: 'Oyunlar — Ömer Tepe',
       title404: '404 — Ömer Tepe',
       tagline: 'EEE öğrencisi · bilgisayarlı görü (computer vision) · İstanbul, TR',
       themeSystem: 'sistem', themeLight: 'açık', themeDark: 'koyu',
-      navHome: 'ana sayfa', navProjects: 'projeler', navResume: 'özgeçmiş', navPlay: 'oyna',
+      navHome: 'ana sayfa', navProjects: 'projeler', navResume: 'özgeçmiş', navGames: 'oyunlar',
       aboutH: 'Hakkında', contactH: 'İletişim',
       aboutP1: "İstanbul Bilgi Üniversitesi'nde Elektrik-Elektronik Mühendisliği öğrencisiyim; şu sıralar ağırlıklı olarak bilgisayarlı görü (computer vision) üzerine çalışıyorum.",
       aboutP2a: 'Yaptığım hemen her şey, gerçekten karşılaştığım bir sorunu çözmek için ortaya çıkıyor. ',
@@ -335,7 +370,7 @@
     }
   };
 
-  var TITLE_KEYS = { home: 'titleHome', projects: 'titleProjects', resume: 'titleResume', game: 'titleGame', '404': 'title404' };
+  var TITLE_KEYS = { home: 'titleHome', projects: 'titleProjects', resume: 'titleResume', games: 'titleGames', '404': 'title404' };
 
   var page = document.body.getAttribute('data-page') || 'home';
 
@@ -530,7 +565,10 @@
 
     var navLinks = document.querySelectorAll('.site-nav a');
     for (var j = 0; j < navLinks.length; j++) {
-      navLinks[j].classList.toggle('active', navLinks[j].getAttribute('data-nav') === page);
+      var isCurrent = navLinks[j].getAttribute('data-nav') === page;
+      navLinks[j].classList.toggle('active', isCurrent);
+      if (isCurrent) navLinks[j].setAttribute('aria-current', 'page');
+      else navLinks[j].removeAttribute('aria-current');
     }
 
     $('lang-en').classList.toggle('active', state.lang === 'en');

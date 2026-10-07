@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Istanbul Exchange — Ömer Tepe</title>
+  <title>Istanbul Exchange — Games — Ömer Tepe</title>
   <meta name="description" content="An Istanbul property-trading board game for 2–6 friends. Create a room, share a link, and play together online.">
   <link rel="canonical" href="https://omertepe.com/monopoly/">
   <meta property="og:title" content="Istanbul Exchange — Ömer Tepe">
@@ -18,22 +18,24 @@
   <link rel="stylesheet" href="/assets/site.css">
   <link rel="stylesheet" href="./game.css?v=20261006-4">
   <link rel="stylesheet" href="./immersive.css?v=20261006-4">
-  <script type="module" src="./app.js?v=20261006-5"></script>
+  <link rel="stylesheet" href="/assets/games.css?v=20261007-2">
+  <script type="module" src="./app.js?v=20261007-2"></script>
 </head>
 <body>
 <div class="page">
-  <div class="game-container">
+  <div class="game-container game-shell">
     <header class="game-header">
       <div class="header-left">
         <h1><a href="/">Mehmet Ömer Tepe</a></h1>
-        <p class="tagline">Istanbul Exchange <span class="edition">/ 02</span></p>
+        <p class="tagline"><span data-copy="gamesTitle">Games</span> / Istanbul Exchange</p>
       </div>
       <div class="toggles">
-        <div class="toggle-row" aria-label="Language"><button data-lang="en" title="English">en</button><button data-lang="tr" title="Türkçe">tr</button></div>
-        <div class="toggle-row" aria-label="Color theme"><button data-theme="system">system</button><button data-theme="light">light</button><button data-theme="dark">dark</button></div>
+        <div class="toggle-row" aria-label="Language" data-copy-aria="languageLabel"><button data-lang="en" title="English">en</button><button data-lang="tr" title="Türkçe">tr</button></div>
+        <div class="toggle-row" aria-label="Color theme" data-copy-aria="themeLabel"><button data-theme="system">system</button><button data-theme="light">light</button><button data-theme="dark">dark</button></div>
       </div>
     </header>
-    <div class="game-nav"><nav class="site-nav" aria-label="Site"><a href="/" data-copy="home">home</a><a href="/projects/" data-copy="projects">projects</a><a href="/resume/" data-copy="resume">resume</a><a href="./" class="active" aria-current="page" data-copy="play">play</a><a href="/secret-hitler/">Secret Hitler</a></nav><button class="text-button" id="rules-button" data-copy="howTo">how to play ↗</button></div>
+    <nav class="site-nav game-site-nav" aria-label="Site navigation" data-copy-aria="siteLabel"><a href="/" data-copy="home">home</a><a href="/projects/" data-copy="projects">projects</a><a href="/games/" class="active" aria-current="location" data-copy="games">games</a><a href="/resume/" data-copy="resume">resume</a></nav>
+    <div class="game-collection-bar"><nav class="game-switcher" aria-label="Games" data-copy-aria="gamesTitle"><a href="/monopoly/" class="active" aria-current="page">Istanbul Exchange</a><a href="/secret-hitler/">Secret Hitler</a></nav><button class="text-button" id="rules-button" data-copy="howTo">how to play ↗</button></div>
     <main id="app">
       <div class="table-heading"><span class="eyebrow" data-copy="table">ISTANBUL / THE TABLE</span><span id="connection" role="status">2–6 players · online or local</span></div>
       <div class="game-layout">
