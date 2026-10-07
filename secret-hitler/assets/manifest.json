@@ -1,0 +1,423 @@
+{
+  "retrieved": "2026-10-07",
+  "license": "CC BY-NC-SA 4.0",
+  "authors": [
+    "Mike Boxleiter",
+    "Tommy Maranges",
+    "Mac Schubert"
+  ],
+  "files": [
+    {
+      "file": "assets/role-liberal.webp",
+      "source": "https://www.secrethitler.com/assets/Secret_Hitler_Print_and_Play.pdf",
+      "sha256": "b117560a7cefa7514b6e6169b2c402a1421b2a2084401f8b8b7539d081734a17",
+      "bytes": 25150,
+      "transform": "Crop original grayscale artwork; rotate upright where needed; resize and encode WebP.",
+      "page": 7,
+      "crop_points": [
+        47,
+        65,
+        204,
+        294
+      ],
+      "rotation_degrees_counterclockwise": 0,
+      "width": 480,
+      "height": 700
+    },
+    {
+      "file": "assets/role-fascist.webp",
+      "source": "https://www.secrethitler.com/assets/Secret_Hitler_Print_and_Play.pdf",
+      "sha256": "990e6d7ff9e134fe40bc73023d06ff39513de61433e9bc546c455284c29e8b83",
+      "bytes": 27496,
+      "transform": "Crop original grayscale artwork; rotate upright where needed; resize and encode WebP.",
+      "page": 8,
+      "crop_points": [
+        588,
+        66,
+        746,
+        295
+      ],
+      "rotation_degrees_counterclockwise": 0,
+      "width": 480,
+      "height": 696
+    },
+    {
+      "file": "assets/role-hitler.webp",
+      "source": "https://www.secrethitler.com/assets/Secret_Hitler_Print_and_Play.pdf",
+      "sha256": "c24ec3919cea003df953bb0c6e4d17cbdb6df01a0542c78785b414e2be19ed40",
+      "bytes": 22668,
+      "transform": "Crop original grayscale artwork; rotate upright where needed; resize and encode WebP.",
+      "page": 8,
+      "crop_points": [
+        408,
+        66,
+        565,
+        295
+      ],
+      "rotation_degrees_counterclockwise": 0,
+      "width": 480,
+      "height": 700
+    },
+    {
+      "file": "assets/policy-liberal.webp",
+      "source": "https://www.secrethitler.com/assets/Secret_Hitler_Print_and_Play.pdf",
+      "sha256": "88afd15d74e1ce394c71ae17d604d29e8e7fa2c04c862a88bd68c28a0c6f743c",
+      "bytes": 15656,
+      "transform": "Crop original grayscale artwork; rotate upright where needed; resize and encode WebP.",
+      "page": 4,
+      "crop_points": [
+        309,
+        147,
+        417,
+        310
+      ],
+      "rotation_degrees_counterclockwise": 0,
+      "width": 420,
+      "height": 633
+    },
+    {
+      "file": "assets/policy-fascist.webp",
+      "source": "https://www.secrethitler.com/assets/Secret_Hitler_Print_and_Play.pdf",
+      "sha256": "ca1cf8e2f2d21f2271c1000b031cf53748f1a1ebf58dc54efe2661aed61b33d8",
+      "bytes": 16314,
+      "transform": "Crop original grayscale artwork; rotate upright where needed; resize and encode WebP.",
+      "page": 2,
+      "crop_points": [
+        108,
+        66,
+        270,
+        173
+      ],
+      "rotation_degrees_counterclockwise": -90,
+      "width": 420,
+      "height": 636
+    },
+    {
+      "file": "assets/ballot-ja.webp",
+      "source": "https://www.secrethitler.com/assets/Secret_Hitler_Print_and_Play.pdf",
+      "sha256": "5693c640aecf5a74e363b6be7dc249d9aaa0892365bb8045232e78dc0a15c145",
+      "bytes": 31398,
+      "transform": "Crop original grayscale artwork; rotate upright where needed; resize and encode WebP.",
+      "page": 4,
+      "crop_points": [
+        47,
+        66,
+        205,
+        292
+      ],
+      "rotation_degrees_counterclockwise": -90,
+      "width": 640,
+      "height": 448
+    },
+    {
+      "file": "assets/ballot-nein.webp",
+      "source": "https://www.secrethitler.com/assets/Secret_Hitler_Print_and_Play.pdf",
+      "sha256": "eef4f9c6c3c69f265dc346c88ad415079c7fd50bb394c64fabe6706a0632f84b",
+      "bytes": 29206,
+      "transform": "Crop original grayscale artwork; rotate upright where needed; resize and encode WebP.",
+      "page": 7,
+      "crop_points": [
+        588,
+        66,
+        744,
+        294
+      ],
+      "rotation_degrees_counterclockwise": -90,
+      "width": 640,
+      "height": 438
+    },
+    {
+      "file": "assets/party-liberal.webp",
+      "source": "https://www.secrethitler.com/assets/Secret_Hitler_Print_and_Play.pdf",
+      "sha256": "601f47e1d93ac6c6ac4778a9176baa6c2bbeaa9f8b648b3e4ca32b93c72e0d3d",
+      "bytes": 37048,
+      "transform": "Crop original grayscale artwork; rotate upright where needed; resize and encode WebP.",
+      "page": 8,
+      "crop_points": [
+        46,
+        69,
+        205,
+        291
+      ],
+      "rotation_degrees_counterclockwise": 0,
+      "width": 420,
+      "height": 586
+    },
+    {
+      "file": "assets/party-fascist.webp",
+      "source": "https://www.secrethitler.com/assets/Secret_Hitler_Print_and_Play.pdf",
+      "sha256": "65672212e5338b3a8b3b1352453626b4ec5e5907674af98c51ee9a68bd128442",
+      "bytes": 36830,
+      "transform": "Crop original grayscale artwork; rotate upright where needed; resize and encode WebP.",
+      "page": 9,
+      "crop_points": [
+        47,
+        70,
+        205,
+        292
+      ],
+      "rotation_degrees_counterclockwise": 0,
+      "width": 420,
+      "height": 589
+    },
+    {
+      "file": "assets/draw-pile.webp",
+      "source": "https://www.secrethitler.com/assets/Secret_Hitler_Print_and_Play.pdf",
+      "sha256": "f4ed3f83daa5845ba6ebab6465525be2067003469901943f05e0f39dbf356d9d",
+      "bytes": 14576,
+      "transform": "Crop original grayscale artwork; rotate upright where needed; resize and encode WebP.",
+      "page": 8,
+      "crop_points": [
+        222,
+        314,
+        388,
+        550
+      ],
+      "rotation_degrees_counterclockwise": 0,
+      "width": 420,
+      "height": 597
+    },
+    {
+      "file": "assets/discard-pile.webp",
+      "source": "https://www.secrethitler.com/assets/Secret_Hitler_Print_and_Play.pdf",
+      "sha256": "c3954d4bf83bda09fa5fe195cc8115f912939e90b3eb874f625eddddb9e34f1c",
+      "bytes": 15086,
+      "transform": "Crop original grayscale artwork; rotate upright where needed; resize and encode WebP.",
+      "page": 8,
+      "crop_points": [
+        222,
+        62,
+        388,
+        298
+      ],
+      "rotation_degrees_counterclockwise": 0,
+      "width": 420,
+      "height": 597
+    },
+    {
+      "file": "assets/logo.webp",
+      "source": "https://www.secrethitler.com/assets/Secret_Hitler_Print_and_Play.pdf",
+      "sha256": "446c5f9c5e5a27e91f5d86c6a032a1262a562c7f2e54b8078173011ebdfc19fe",
+      "bytes": 23564,
+      "transform": "Crop original grayscale artwork; rotate upright where needed; resize and encode WebP.",
+      "page": 1,
+      "crop_points": [
+        213,
+        159,
+        573,
+        414
+      ],
+      "rotation_degrees_counterclockwise": 0,
+      "width": 900,
+      "height": 637
+    },
+    {
+      "file": "assets/placard-president.webp",
+      "source": "https://www.secrethitler.com/assets/Secret_Hitler_Print_and_Play.pdf",
+      "sha256": "41f241b9d9aacb34fc75da8d539c46f8ec461f2b43428876e71fceecc6723f1c",
+      "bytes": 22124,
+      "transform": "Crop original grayscale artwork; rotate upright where needed; resize and encode WebP.",
+      "page": 3,
+      "crop_points": [
+        565,
+        77,
+        693,
+        554
+      ],
+      "rotation_degrees_counterclockwise": -90,
+      "width": 1000,
+      "height": 268
+    },
+    {
+      "file": "assets/placard-chancellor.webp",
+      "source": "https://www.secrethitler.com/assets/Secret_Hitler_Print_and_Play.pdf",
+      "sha256": "09782ed7293c8f156ced1f7c5a3aa8ef849b05926a98ecf2080370b230407209",
+      "bytes": 22180,
+      "transform": "Crop original grayscale artwork; rotate upright where needed; resize and encode WebP.",
+      "page": 3,
+      "crop_points": [
+        270,
+        76,
+        400,
+        555
+      ],
+      "rotation_degrees_counterclockwise": -90,
+      "width": 1000,
+      "height": 271
+    },
+    {
+      "file": "assets/logo-transparent.webp",
+      "source": "https://www.secrethitler.com/assets/Secret_Hitler_Print_and_Play.pdf",
+      "sha256": "691b2fe59b8a8b065b500eeae176cf5d401579076f4b8aa9dd5e5e1d97731cb8",
+      "bytes": 42932,
+      "transform": "Crop logo from cover and resize; convert white background and white lettering to transparency, retaining original logo silhouette and antialiasing.",
+      "page": 1,
+      "crop_points": [
+        213,
+        159,
+        573,
+        414
+      ],
+      "width": 900,
+      "height": 637
+    },
+    {
+      "file": "assets/board-liberal.webp",
+      "source": "https://www.secrethitler.com/assets/Secret_Hitler_Print_and_Play.pdf",
+      "sha256": "66850f8752afa5738061303d66a5be912122b27f0a322141339644050ce9cd6b",
+      "bytes": 184802,
+      "transform": "Crop two printed board halves; rotate along matching assembly edges; concatenate; resize and encode WebP.",
+      "page": 10,
+      "crop_points": [
+        [
+          65,
+          51.5,
+          367.5,
+          528
+        ],
+        [
+          424.5,
+          51.5,
+          727,
+          528
+        ]
+      ],
+      "width": 1800,
+      "height": 572
+    },
+    {
+      "file": "assets/board-fascist-5-6.webp",
+      "source": "https://www.secrethitler.com/assets/Secret_Hitler_Print_and_Play.pdf",
+      "sha256": "52ed7b602edefaa0d8a4af492ab67341990a9fa528496bb0be9f8ed4de393ef6",
+      "bytes": 164410,
+      "transform": "Crop two printed board halves; rotate along matching assembly edges; concatenate; resize and encode WebP.",
+      "page": 11,
+      "crop_points": [
+        [
+          65,
+          51.5,
+          367.5,
+          528
+        ],
+        [
+          424.5,
+          51.5,
+          727,
+          528
+        ]
+      ],
+      "width": 1800,
+      "height": 572
+    },
+    {
+      "file": "assets/board-fascist-7-8.webp",
+      "source": "https://www.secrethitler.com/assets/Secret_Hitler_Print_and_Play.pdf",
+      "sha256": "9a4df706edffd7ba8c01841d9df0243dcc2e5f2ed14c02e490c07ff2c1917440",
+      "bytes": 152882,
+      "transform": "Crop two printed board halves; rotate along matching assembly edges; concatenate; resize and encode WebP.",
+      "page": 12,
+      "crop_points": [
+        [
+          65,
+          51.5,
+          367.5,
+          528
+        ],
+        [
+          424.5,
+          51.5,
+          727,
+          528
+        ]
+      ],
+      "width": 1800,
+      "height": 572
+    },
+    {
+      "file": "assets/board-fascist-9-10.webp",
+      "source": "https://www.secrethitler.com/assets/Secret_Hitler_Print_and_Play.pdf",
+      "sha256": "fe4acd42df7a9e1577ba02f4b4d4ee93bfd7ea40042d8f6d4029391d1cc681e7",
+      "bytes": 138442,
+      "transform": "Crop two printed board halves; rotate along matching assembly edges; concatenate; resize and encode WebP.",
+      "page": 13,
+      "crop_points": [
+        [
+          65,
+          51.5,
+          367.5,
+          528
+        ],
+        [
+          424.5,
+          51.5,
+          727,
+          528
+        ]
+      ],
+      "width": 1800,
+      "height": 572
+    },
+    {
+      "file": "downloads/official-box.svg",
+      "source": "https://www.secrethitler.com/",
+      "sha256": "a0addafdf1fa7f38532b89bc937d5b88cbc96763ff47644e69205e09c4bc217a",
+      "bytes": 411285,
+      "transform": "Extract official inline SVG; inline corresponding presentation attributes from https://www.secrethitler.com/stylesheets/secret.css. Geometry and original colors retained."
+    },
+    {
+      "file": "assets/official-box.webp",
+      "source": "https://www.secrethitler.com/",
+      "sha256": "97d613d626b7c8fadce3be8686e20efc408bd7d2e9d765447585d0556e8da5f5",
+      "bytes": 115790,
+      "transform": "Rasterize extracted official website SVG with its original CSS fills; encode WebP.",
+      "width": 1280,
+      "height": 662
+    },
+    {
+      "file": "downloads/official-fascist-card.svg",
+      "source": "https://www.secrethitler.com/",
+      "sha256": "99fce9cd78d3dac0fc226656bc228f064eafc4e7f6ed32921ed54eb9c3f258bd",
+      "bytes": 43277,
+      "transform": "Extract official inline SVG; inline corresponding presentation attributes from https://www.secrethitler.com/stylesheets/secret.css. Geometry and original colors retained."
+    },
+    {
+      "file": "assets/official-fascist-card.webp",
+      "source": "https://www.secrethitler.com/",
+      "sha256": "ee6addc73237294af3f1b6850263fb191579baf5fdfc5d8132b8f6f1ce27f9d7",
+      "bytes": 14502,
+      "transform": "Rasterize extracted official website SVG with its original CSS fills; encode WebP.",
+      "width": 320,
+      "height": 468
+    },
+    {
+      "file": "downloads/official-printer.svg",
+      "source": "https://www.secrethitler.com/",
+      "sha256": "9710ce5424949ad457ffa797d37be4e58eb343bcaa7c5b25f33ff636bf3ef056",
+      "bytes": 22702,
+      "transform": "Extract official inline SVG; inline corresponding presentation attributes from https://www.secrethitler.com/stylesheets/secret.css. Geometry and original colors retained."
+    },
+    {
+      "file": "downloads/Secret_Hitler_Print_and_Play.pdf",
+      "source": "https://www.secrethitler.com/assets/Secret_Hitler_Print_and_Play.pdf",
+      "sha256": "b835c7b1365f19448649db99a78b043f30f12a1805b62bf3a4e883562edd6829",
+      "bytes": 3660982,
+      "transform": "Downloaded verbatim; no changes.",
+      "pages": 13
+    },
+    {
+      "file": "downloads/Secret_Hitler_Rules.pdf",
+      "source": "https://www.secrethitler.com/assets/Secret_Hitler_Rules.pdf",
+      "sha256": "b4bf3d970b433e45d6fa67de4dfc6130f8e4d35a12edbdd92a0a817171581231",
+      "bytes": 1476987,
+      "transform": "Downloaded verbatim; no changes.",
+      "pages": 7
+    },
+    {
+      "file": "downloads/official-favicon.png",
+      "source": "https://www.secrethitler.com/assets/favicon.png",
+      "sha256": "7f911af48a3eebf6612269940916f0b2a95140bf126a8176203c58534f9bb120",
+      "bytes": 1692,
+      "transform": "Downloaded verbatim; no changes."
+    }
+  ]
+}
