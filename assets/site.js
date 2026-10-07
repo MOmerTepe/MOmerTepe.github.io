@@ -27,6 +27,20 @@
   // Once one gets a separate repo, map its name in REPO_CATEGORIES instead.
   var LOCAL_PROJECTS = [
     {
+      id: 'secret-hitler',
+      name: 'Secret Hitler',
+      cat: 'other',
+      sortYear: 2026,
+      url: '/secret-hitler/',
+      internal: true,
+      actionLabel: 'playLabel',
+      meta: { en: '2026 · 5–10 players', tr: '2026 · 5–10 oyuncu' },
+      desc: {
+        en: 'A free, unofficial online adaptation of the social deduction game. Private roles, hidden policies, simultaneous votes, and a table for your friends.',
+        tr: 'Gizli roller, saklı politikalar, eşzamanlı oylar ve arkadaşların için bir masa. Sosyal çıkarım oyununun ücretsiz, resmî olmayan çevrimiçi uyarlaması.'
+      }
+    },
+    {
       id: 'istanbul-exchange',
       name: 'Istanbul Exchange',
       cat: 'other',
