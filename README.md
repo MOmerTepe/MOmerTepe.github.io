@@ -12,9 +12,15 @@ From this repository's root, run:
 python -m http.server 8080
 ```
 
-Open `http://localhost:8080/` for the site or `http://localhost:8080/monopoly/` for Istanbul Exchange. There is no build step. Use an HTTP server rather than opening HTML files directly so the game's JavaScript modules can load.
+Open `http://localhost:8080/` for the site or `http://localhost:8080/games/` for the games collection. There is no build step. Use an HTTP server rather than opening HTML files directly so the game's JavaScript modules can load.
 
-## Istanbul Exchange
+## Games
+
+The Games tab at `/games/` is the single entry point for both games. It shares the portfolio's theme and language preferences and lists player counts, modes, and direct play links. Both game pages use the same site navigation and game switcher, styled in `assets/games.css`. Games are kept out of the project catalog; the homepage and Projects page point to the collection.
+
+Existing play URLs remain `/monopoly/` and `/secret-hitler/`, so saved links and room invitations continue to work. Game engines, room protocols, and assets stay in their existing directories.
+
+### Istanbul Exchange
 
 A browser-based property-trading game for 2–6 friends, built around Istanbul neighborhoods and the site's typography, themes, and English/Turkish controls. Play online or take turns locally, choose from six sculpted pawns and eight colors, and use a 3D board with animated movement and buildings or the keyboard-accessible 2D board. Board palettes, reduced motion, and optional sound are personal viewing preferences.
 
@@ -24,9 +30,13 @@ The site and all game assets stay on GitHub Pages. Online rooms use WebRTC conne
 
 See [the game README](monopoly/README.md) for rules, online room setup, service dependencies, and tests.
 
+### Secret Hitler
+
+A free, unofficial adaptation for 5–10 players with private roles, simultaneous voting, the complete original rules, table chat, and solo practice bots. The official rulebook and print-and-play PDFs are included with original artwork and CC BY-NC-SA 4.0 attribution. See [the game README](secret-hitler/README.md) for rules, hosting, privacy, and tests.
+
 ## Publish
 
-The existing `CNAME` keeps the site at `omertepe.com`. Publish the repository root through the site's existing GitHub Pages branch/workflow; no separate game server or build output is required. The game is then available at `https://omertepe.com/monopoly/`.
+The existing `CNAME` keeps the site at `omertepe.com`. Publish the repository root through the site's existing GitHub Pages branch/workflow; no separate game server or build output is required. The collection is available at `https://omertepe.com/games/`, with direct play routes for both games.
 
 Keep HTTPS enabled in GitHub Pages. Room signaling and WebRTC connectivity depend on external services described in the game README; GitHub Pages serves the files and does not keep live rooms running.
 
@@ -36,6 +46,9 @@ Keep HTTPS enabled in GitHub Pages. Room signaling and WebRTC connectivity depen
 - `projects/` - all projects, grouped by category; published repos are pulled live from the GitHub API, unpublished ones come from the catalog in `assets/site.js`
 - `projects/<slug>/` - per-project case studies, each with an interactive canvas schematic (`demo.js`, vanilla JS, no dependencies)
 - `resume/` - inline SVG preview (`assets/resume-preview.svg`) + download link (`assets/resume.pdf`)
+- `games/` - shared collection page for both games
+- `secret-hitler/` - multiplayer social deduction game, official resources, and practice bots
+- `assets/games.css` - shared game navigation and collection styling
 - `monopoly/` - Istanbul Exchange: static multiplayer property-trading game, 3D/2D boards, pawn customization, and shared custom rules
 - `404.html` - custom not-found page
 - `assets/site.css`, `assets/site.js` - shared styles, i18n (EN/TR), theming, project catalog

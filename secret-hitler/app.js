@@ -23,9 +23,11 @@ function openModal(title,html,kind=''){modalKind=kind;$('modal-title').textConte
 function closeModal(){$('modal').close();$('modal-content').replaceChildren();modalKind='';}
 function refreshLabels(){
   document.documentElement.lang=lang;document.documentElement.style.colorScheme=theme==='system'?'light dark':theme;
-  const copy={home:t('home','ana sayfa'),projects:t('projects','projeler'),how:t('how to play ↗','nasıl oynanır ↗'),edition:t('THE SOCIAL DEDUCTION TABLE','GİZLİ ROLLER MASASI'),original:t('FROM THE ORIGINAL GAME','ORİJİNAL OYUNDAN'),sourceText:t('The original rulebook and printable game, kept here for your table.','Orijinal kural kitabı ve yazdırılabilir oyun dosyaları.'),rulebook:t('Official rulebook ↗','Resmî kurallar ↗'),printPlay:t('Print & play ↓','Yazdır ve oyna ↓'),credits:t('credits + license ↗','katkılar + lisans ↗'),unofficial:t('Unofficial, noncommercial adaptation.','Resmî olmayan, ticari olmayan uyarlama.')};
+  document.title=`Secret Hitler — ${t('Games','Oyunlar')} — Ömer Tepe`;
+  const copy={home:t('home','ana sayfa'),projects:t('projects','projeler'),games:t('games','oyunlar'),gamesTitle:t('Games','Oyunlar'),resume:t('resume','özgeçmiş'),siteLabel:t('Site navigation','Site gezinme'),languageLabel:t('Language','Dil'),themeLabel:t('Color theme','Renk teması'),how:t('how to play ↗','nasıl oynanır ↗'),edition:t('THE SOCIAL DEDUCTION TABLE','GİZLİ ROLLER MASASI'),original:t('FROM THE ORIGINAL GAME','ORİJİNAL OYUNDAN'),sourceText:t('The original rulebook and printable game, kept here for your table.','Orijinal kural kitabı ve yazdırılabilir oyun dosyaları.'),rulebook:t('Official rulebook ↗','Resmî kurallar ↗'),printPlay:t('Print & play ↓','Yazdır ve oyna ↓'),credits:t('credits + license ↗','katkılar + lisans ↗'),unofficial:t('Unofficial, noncommercial adaptation.','Resmî olmayan, ticari olmayan uyarlama.')};
   document.querySelectorAll('[data-label]').forEach(e=>e.textContent=copy[e.dataset.label]);
-  document.querySelectorAll('[data-lang]').forEach(e=>e.classList.toggle('active',e.dataset.lang===lang));document.querySelectorAll('[data-theme]').forEach(e=>e.classList.toggle('active',e.dataset.theme===theme));
+  document.querySelectorAll('[data-label-aria]').forEach(e=>e.setAttribute('aria-label',copy[e.dataset.labelAria]));
+  document.querySelectorAll('[data-lang]').forEach(e=>e.classList.toggle('active',e.dataset.lang===lang));document.querySelectorAll('[data-theme]').forEach(e=>{e.classList.toggle('active',e.dataset.theme===theme);e.textContent=({system:t('system','sistem'),light:t('light','açık'),dark:t('dark','koyu')})[e.dataset.theme];});
 }
 function render(){
   const focused=document.activeElement?.id,selection=document.activeElement?.selectionStart;refreshLabels();

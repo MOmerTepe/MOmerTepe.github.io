@@ -37,7 +37,7 @@ const activeId = () => state?.debt?.playerId || state?.auction?.bidderId || curr
 const button = (label, action, cls='', disabled=false, extra='') => `<button type="button" class="button ${cls}" data-action="${action}" ${disabled || ((busy||animationBusy)&&/^[A-Z_]+$/.test(action)) ? 'disabled' : ''} ${extra}>${label}</button>`;
 const panel = (title, body, extra='') => `<section class="panel"><div class="panel-title"><h2>${title}</h2>${extra}</div>${body}</section>`;
 const token = (p,active=false) => `<span class="token sculpted-token ${active ? 'current' : ''}" data-player="${esc(p.id)}" style="--token:${esc(p.color)}" title="${esc(p.name)}">${pawnIcon(p.token)}<small>${state?.players.indexOf(p)+1 || '·'}</small></span>`;
-const copy = {home:['home','ana sayfa'],projects:['projects','projeler'],resume:['resume','özgeçmiş'],play:['play','oyna'],howTo:['how to play ↗','nasıl oynanır ↗'],table:['ISTANBUL / THE TABLE','İSTANBUL / OYUN MASASI'],boardHint:['Select a space to inspect its deed.','Tapuyu incelemek için bir kare seç.'],footer:['A property game, made for friends.','Arkadaşlar için bir emlak oyunu.']};
+const copy = {home:['home','ana sayfa'],projects:['projects','projeler'],games:['games','oyunlar'],gamesTitle:['Games','Oyunlar'],resume:['resume','özgeçmiş'],siteLabel:['Site navigation','Site gezinme'],languageLabel:['Language','Dil'],themeLabel:['Color theme','Renk teması'],howTo:['how to play ↗','nasıl oynanır ↗'],table:['ISTANBUL / THE TABLE','İSTANBUL / OYUN MASASI'],boardHint:['Select a space to inspect its deed.','Tapuyu incelemek için bir kare seç.'],footer:['A property game, made for friends.','Arkadaşlar için bir emlak oyunu.']};
 const rules = () => {
   const r=activeRules();
   return `<p>${t('Buy your way around Istanbul. Collect districts, build on complete color sets, and be the last player who has not gone bankrupt.','İstanbul sokaklarında mülk al. Aynı renkteki semtleri topla, binalar inşa et ve iflas etmeden kalan son oyuncu ol.')}</p><p class="small-muted">${t(`This table uses ${ruleName()} rules. The amounts below match this table.`,`Bu masada ${ruleName()} kuralları geçerli. Aşağıdaki tutarlar bu masaya aittir.`)}</p><ol class="rules-list">
@@ -52,10 +52,12 @@ const rules = () => {
 
 function applyPreferences() {
   document.documentElement.lang = lang;
+  document.title = `Istanbul Exchange — ${t('Games','Oyunlar')} — Ömer Tepe`;
   document.documentElement.style.colorScheme = theme === 'system' ? 'light dark' : theme;
   document.querySelectorAll('[data-lang]').forEach(b => b.classList.toggle('active',b.dataset.lang === lang));
   document.querySelectorAll('[data-theme]').forEach(b => { b.classList.toggle('active',b.dataset.theme === theme); b.textContent = ({system:t('system','sistem'),light:t('light','açık'),dark:t('dark','koyu')})[b.dataset.theme]; });
   document.querySelectorAll('[data-copy]').forEach(el => el.textContent = t(...copy[el.dataset.copy]));
+  document.querySelectorAll('[data-copy-aria]').forEach(el => el.setAttribute('aria-label',t(...copy[el.dataset.copyAria])));
 }
 function notice(message) { clearTimeout(noticeTimer); $('notice').textContent = message; $('notice').hidden = false; noticeTimer = setTimeout(() => $('notice').hidden = true,6500); }
 function openModal(title,content) { displayedTradeId=null; $('modal-title').textContent=title; $('modal-content').innerHTML=content; if (!$('modal').open) $('modal').showModal(); }
