@@ -1,4 +1,4 @@
-# Secret Hitler — omertepe.com
+# Secret Hitler · omertepe.com
 
 A free, unofficial, noncommercial browser adaptation of Secret Hitler for 5–10 friends at https://omertepe.com/secret-hitler/. The original game is by Mike Boxleiter, Tommy Maranges, and Mac Schubert. This adaptation and the original game materials are licensed under **CC BY-NC-SA 4.0**. See [LICENSE](LICENSE) and [SOURCES.md](SOURCES.md) for attribution, original download URLs, and changes to artwork. The original PDFs are preserved unchanged.
 

@@ -182,7 +182,7 @@
 
   var last = performance.now();
   function frame(now) {
-    var dt = Math.min(0.05, (now - last) / 1000);
+    var dt = clamp((now - last) / 1000, 0, 0.05);  // the first rAF stamp can precede `last`
     last = now;
     if (pageVisible && inView && !reduced) {
       t += dt;
