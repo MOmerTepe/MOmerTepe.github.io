@@ -1,22 +1,24 @@
-import { BOARD, GROUPS } from './board.js?v=20261006-4';
-import { createGame, applyAction, calculateRent } from './engine.js?v=20261006-4';
-import { RoomSession } from './network.js?v=20261006-5';
-import { DEFAULT_RULES, RULE_PRESETS, normalizeRules } from './rules.js?v=20261006-4';
-import { TOKEN_OPTIONS, PLAYER_COLORS, sanitizeProfile } from './cosmetics.js?v=20261006-4';
-import { pawnIcon, buildingIcons, GameEffects } from './graphics.js?v=20261006-4';
+import { BOARD, GROUPS, SPACE_ICONS, spaceLabel } from './board.js?v=20261111-4';
+import { createGame, applyAction, calculateRent, assetValue } from './engine.js?v=20261111-4';
+import { RoomSession } from './network.js?v=20261111-4';
+import { DEFAULT_RULES, RULE_PRESETS, normalizeRules } from './rules.js?v=20261111-4';
+import { TOKEN_OPTIONS, PLAYER_COLORS, HAIR_STYLES, HAIR_COLORS, SKIN_TONES, sanitizeProfile } from './cosmetics.js?v=20261111-4';
+import { pawnIcon, buildingIcons, GameEffects, DICE_MS, STEP_MS } from './graphics.js?v=20261111-4';
 
 const $ = (id) => document.getElementById(id);
 const esc = (value) => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const read = (key, fallback) => { try { return localStorage.getItem(key) || fallback; } catch { return fallback; } };
 const save = (key, value) => { try { localStorage.setItem(key, value); } catch {} };
+const LOCAL_SAVE = 'omt-monopoly-local';
+const forget = key => { try { localStorage.removeItem(key); } catch {} };
 let lang = read('omt-lang', navigator.language.startsWith('tr') ? 'tr' : 'en');
 let theme = read('omt-theme','system');
 let state = null, session = null, local = false, selected = 1, busy = false, screen = 'home', noticeTimer, displayedTradeId = null;
 let draftName = read('omt-player-name',''), draftCode = new URLSearchParams(location.hash.slice(1)).get('room') || '', localCount = 2;
 let localNames = ['', '', '', '', '', ''];
 const colors = PLAYER_COLORS;
-let profile=sanitizeProfile({token:read('omt-pawn','ferry'),color:read('omt-pawn-color',colors[0])});
-let localProfiles=TOKEN_OPTIONS.map((p,i)=>({token:p.id,color:colors[i]}));
+let profile=sanitizeProfile({token:read('omt-pawn','ferry'),color:read('omt-pawn-color',colors[0]),hair:read('omt-hair',''),hairColor:read('omt-hair-color',''),skin:read('omt-skin','')});
+let localProfiles=TOKEN_OPTIONS.map((p,i)=>({token:p.id,color:colors[i],hair:HAIR_STYLES[i%HAIR_STYLES.length],hairColor:HAIR_COLORS[i%HAIR_COLORS.length],skin:SKIN_TONES[i%SKIN_TONES.length]}));
 let pendingRules={...DEFAULT_RULES},view=read('omt-board-view','3d'),palette=read('omt-board-palette','stone');
 let sound=read('omt-game-sound','off')==='on',reduceMotion=read('omt-game-motion','system')==='reduced';
 let scene=null,scenePromise=null,sceneFailed=false,animationBusy=false,motionTimer=null,profileTarget=null;
@@ -52,7 +54,7 @@ const rules = () => {
 
 function applyPreferences() {
   document.documentElement.lang = lang;
-  document.title = `Istanbul Exchange — ${t('Games','Oyunlar')} — Ömer Tepe`;
+  document.title = `Istanbul Exchange · ${t('Games','Oyunlar')} · Ömer Tepe`;
   document.documentElement.style.colorScheme = theme === 'system' ? 'light dark' : theme;
   document.querySelectorAll('[data-lang]').forEach(b => b.classList.toggle('active',b.dataset.lang === lang));
   document.querySelectorAll('[data-theme]').forEach(b => { b.classList.toggle('active',b.dataset.theme === theme); b.textContent = ({system:t('system','sistem'),light:t('light','açık'),dark:t('dark','koyu')})[b.dataset.theme]; });
@@ -63,17 +65,17 @@ function notice(message) { clearTimeout(noticeTimer); $('notice').textContent = 
 function openModal(title,content) { displayedTradeId=null; $('modal-title').textContent=title; $('modal-content').innerHTML=content; if (!$('modal').open) $('modal').showModal(); }
 function propertyState(index) { return state?.properties?.[index] || {owner:null,houses:0,mortgaged:false}; }
 function buildBoard() {
-  const icons = {go:'↗',jail:'▥',parking:'P',goToJail:'→',chance:'?',community:'◇',tax:'−',railroad:'↔',utility:'⌁'};
+  const icons = SPACE_ICONS;
   for (const square of BOARD) {
     const i=square.index;
     let row,col;
     if(i<=10){row=11;col=11-i;} else if(i<=20){row=21-i;col=1;} else if(i<=30){row=1;col=i-19;} else{row=i-29;col=11;}
     const el=document.createElement('button');
-    el.className='space'+(i%10===0?' corner':''); el.dataset.space=i;
+    el.className='space'+(i%10===0?' corner':''); el.dataset.space=i;if(i%10)el.dataset.side=['bottom','left','top','right'][Math.floor(i/10)];
     el.style.gridRow=row;el.style.gridColumn=col;el.style.setProperty('--group',square.color || 'var(--line)');
     el.setAttribute('aria-label',`${i}. ${square.name}${square.price ? ', '+cash(square.price) : ''}`);
     el.title=`${i}. ${square.name}`;
-    const shortName=square.type==='chance'?'Chance':square.type==='jail'?'Jail / Visiting':square.name;
+    const shortName=spaceLabel(square);
     el.innerHTML=`${icons[square.type] ? `<span class="space-icon" aria-hidden="true">${icons[square.type]}</span>` : `<span class="mobile-only" aria-hidden="true">${String(i).padStart(2,'0')}</span>`}<span class="space-name">${esc(shortName)}</span><span class="tokens"></span><span class="space-price">${square.price ? cash(square.price) : i===0 ? '+₺200' : ''}</span><span class="building-marks"></span>`;
     $('board').appendChild(el);
   }
@@ -91,7 +93,7 @@ function renderBoard() {
 }
 function landing() {
   if (screen==='local') return `<div class="center-content"><div class="brand-mark">${t('PASS & PLAY','AYNI EKRANDA')}</div><h2 class="turn-title">${t('Gather around.','Bir araya gelin.')}</h2><p class="turn-detail">${t('Take turns on this device.','Bu cihazda sırayla oynayın.')}</p><form id="local-form"><label class="field">${t('Players','Oyuncular')}<select id="local-count">${[2,3,4,5,6].map(n=>`<option ${n===localCount?'selected':''}>${n}</option>`).join('')}</select></label><div class="local-players">${Array.from({length:localCount},(_,i)=>`<label class="field">${t('Player','Oyuncu')} ${i+1}<input data-local-name="${i}" maxlength="24" value="${esc(localNames[i])}" placeholder="${t('Player','Oyuncu')} ${i+1}"></label>`).join('')}</div><div class="button-row">${button(t('Back','Geri'),'home') }<button class="button primary" type="submit">${t('Start game →','Oyuna başla →')}</button></div></form></div>`;
-  return `<div class="center-content"><div class="brand-mark">EST. 2026 / 2–6 ${t('PLAYERS','OYUNCU')}</div><h2 class="game-title"><span>Istanbul</span><span>Exchange.</span></h2><p class="intro">${t('A city to share. A fortune to make.','Paylaşılacak bir şehir. Kurulacak bir servet.')}</p><form id="online-form" class="setup-form"><label class="field">${t('Your name','Adın')}<input id="player-name" autocomplete="nickname" maxlength="24" placeholder="${t('What should we call you?','Sana ne diyelim?')}" value="${esc(draftName)}" required></label>${screen==='join' ? `<label class="field">${t('Room code','Oda kodu')}<input id="room-code" maxlength="12" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="XXXX-XXXX" value="${esc(draftCode)}" required></label><div class="button-row">${button(t('Back','Geri'),'home')}<button class="button primary" type="submit" ${busy?'disabled':''}>${busy?t('Connecting…','Bağlanıyor…'):t('Join room →','Odaya katıl →')}</button></div>` : `<button class="button primary wide" type="submit" ${busy?'disabled':''}>${busy?t('Creating room…','Oda açılıyor…'):t('Create a room →','Oda oluştur →')}</button><div class="button-row">${button(t('Join with a code','Kod ile katıl'),'join','wide')}</div>`}</form>${button(t('or play on this device','veya bu cihazda oyna'),'local','text-button local-link')}<p class="fine-print">${t('No accounts. Bring your friends.','Hesap gerekmez. Arkadaşlarını çağır.')}</p></div>`;
+  return `<div class="center-content"><div class="brand-mark">EST. 2026 / 2–6 ${t('PLAYERS','OYUNCU')}</div><h2 class="game-title"><span>Istanbul</span><span>Exchange.</span></h2><p class="intro">${t('A city to share. A fortune to make.','Paylaşılacak bir şehir. Kurulacak bir servet.')}</p><form id="online-form" class="setup-form"><label class="field">${t('Your name','Adın')}<input id="player-name" autocomplete="nickname" maxlength="24" placeholder="${t('What should we call you?','Sana ne diyelim?')}" value="${esc(draftName)}" required></label>${screen==='join' ? `<label class="field">${t('Room code','Oda kodu')}<input id="room-code" maxlength="12" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="XXXX-XXXX" value="${esc(draftCode)}" required></label><div class="button-row">${button(t('Back','Geri'),'home')}<button class="button primary" type="submit" ${busy?'disabled':''}>${busy?t('Connecting…','Bağlanıyor…'):t('Join room →','Odaya katıl →')}</button></div>` : `<button class="button primary wide" type="submit" ${busy?'disabled':''}>${busy?t('Creating room…','Oda açılıyor…'):t('Create a room →','Oda oluştur →')}</button><div class="button-row">${button(t('Join with a code','Kod ile katıl'),'join','wide')}</div>`}</form>${button(t('or play on this device','veya bu cihazda oyna'),'local','text-button local-link')}${read(LOCAL_SAVE,'')?button(t('resume your local game ↗','yerel oyuna devam et ↗'),'resume','text-button local-link'):''}<p class="fine-print">${t('No accounts. Bring your friends.','Hesap gerekmez. Arkadaşlarını çağır.')}</p></div>`;
 }
 function diceHtml() {
   const pips={1:[5],2:[1,9],3:[1,5,9],4:[1,3,7,9],5:[1,3,5,7,9],6:[1,3,4,6,7,9]};
@@ -106,16 +108,16 @@ function renderCenter() {
     let title=mine?t('Your move.','Sıra sende.'):t(`${p.name}’s move.`,`${p.name} oynuyor.`), detail='',controls='',dice=true;
     if(local) title=t(`${p.name}’s move.`,`${p.name} oynuyor.`);
     if(state.phase==='roll'){
-      detail=p.inJail?t(`In jail. Roll doubles to get out, or pay ${cash(state.settings.bail)} before rolling.`,`Hapistesin. Çift zar at veya atmadan önce ${cash(state.settings.bail)} öde.`):state.extraRoll?t('Doubles. Take another roll.','Çift zar. Bir kez daha at.'):t('The next district is a roll away.','Sıradaki semt bir zar uzağında.');
+      detail=p.inJail?t(`On a detour. Roll doubles to get out, or pay ${cash(state.settings.bail)} before rolling.`,`Sapak’tasın. Çift zar at veya atmadan önce ${cash(state.settings.bail)} öde.`):state.extraRoll?t('Doubles. Take another roll.','Çift zar. Bir kez daha at.'):t('The next district is a roll away.','Sıradaki semt bir zar uzağında.');
       controls=button(t('Roll dice →','Zar at →'),'ROLL','primary wide',!mine);
-      if(p.inJail) controls+=`<div class="button-row">${button(p.jailCards?t('Use release card','Çıkış kartı kullan'):t(`Pay ${cash(state.settings.bail)} bail`,`${cash(state.settings.bail)} kefalet öde`),'PAY_BAIL','',!mine)}</div>`;
+      if(p.inJail) controls+=`<div class="button-row">${button(p.jailCards?t('Use release card','Çıkış kartı kullan'):t(`Pay ${cash(state.settings.bail)} to leave`,`${cash(state.settings.bail)} öde ve çık`),'PAY_BAIL','',!mine)}</div>`;
     } else if(state.phase==='purchase'){
       const square=BOARD[state.pending.property]; title=square.name;detail=t(`Unowned. The asking price is ${cash(square.price)}.`,`Sahipsiz. Satış fiyatı ${cash(square.price)}.`);dice=false;
       controls=button(t(`Buy for ${cash(square.price)}`,`${cash(square.price)} öde ve al`),'BUY','primary wide',!mine||p.cash<square.price)+`<div class="button-row">${button(state.settings.auctions?t('Send to auction','Açık artırmaya çıkar'):t('Skip purchase','Satın almadan geç'),'AUCTION','wide',!mine)}</div>`;
     } else if(state.phase==='auction'){
       const a=state.auction;title=BOARD[a.property].name;dice=false;
       detail=t(`${name(a.bidderId)} to bid. Highest: ${cash(a.highestBid)}${a.highestBidder?' · '+name(a.highestBidder):''}.`,`${name(a.bidderId)} teklif veriyor. En yüksek: ${cash(a.highestBid)}${a.highestBidder?' · '+name(a.highestBidder):''}.`);
-      controls=`<form id="bid-form"><label class="field">${t('Your bid','Teklifin')}<input id="bid-amount" type="number" inputmode="numeric" min="${a.highestBid+1}" max="${who?.cash||0}" value="${a.highestBid+10}" ${myAction?'':'disabled'} required></label><div class="button-row"><button class="button primary" ${!myAction||busy?'disabled':''}>${t('Place bid','Teklif ver')}</button>${button(t('Pass','Pas'),'PASS','',!myAction)}</div></form>`;
+      controls=`<form id="bid-form"><label class="field">${t('Your bid','Teklifin')}<input id="bid-amount" type="number" inputmode="numeric" min="${a.highestBid+1}" max="${who?.cash||0}" value="${Math.max(a.highestBid+1,Math.min(a.highestBid+10,who?.cash||0))}" ${myAction?'':'disabled'} required></label><div class="button-row"><button class="button primary" ${!myAction||busy?'disabled':''}>${t('Place bid','Teklif ver')}</button>${button(t('Pass','Pas'),'PASS','',!myAction)}</div></form>`;
     } else if(state.phase==='debt'){
       title=t(`${name(state.debt.playerId)} owes ${cash(state.debt.amount)}.`,`${name(state.debt.playerId)}: ${cash(state.debt.amount)} borç.`);dice=false;
       detail=t('Raise cash by selling buildings or mortgaging your deeds. The debt clears automatically when you have enough.','Bina sat veya mülklerini ipotek et. Yeterli paran olduğunda borç otomatik ödenir.');
@@ -127,7 +129,7 @@ function renderCenter() {
       controls=button(t('End turn →','Sırayı devret →'),'END_TURN','primary wide',!mine);
     }
     if(state.trade){title=t('A deal on the table.','Masada bir teklif var.');detail=t(`${name(state.trade.fromId)} has made an offer to ${name(state.trade.toId)}. Resolve it before continuing.`,`${name(state.trade.fromId)}, ${name(state.trade.toId)} için teklif verdi. Devam etmek için sonuçlandırın.`);controls=button(t('Review trade →','Takası incele →'),'review-trade','primary wide');dice=false;}
-    html=`<div class="center-content"><div class="center-label">${state.phase==='finished'?'ISTANBUL EXCHANGE':t('ISTANBUL EXCHANGE / ','ISTANBUL EXCHANGE / ')+esc(local?t('LOCAL TABLE','YEREL OYUN'):session?.roomCode||'')}</div><h2 class="turn-title">${esc(title)}</h2>${dice?diceHtml():`<div class="center-rule"></div>`}<p class="turn-detail">${esc(detail)}</p><div class="setup-form">${controls}</div>${state.phase!=='finished'?`<p class="center-balance">${esc(who?.name || p.name)} · ${cash(who?.cash ?? p.cash)}</p>`:''}${local?`<p class="fine-print">${t('Pass this device to the player whose turn it is.','Cihazı sırası gelen oyuncuya ver.')}</p>`:''}</div>`;
+    html=`<div class="center-content"><div class="center-label">${state.phase==='finished'?'ISTANBUL EXCHANGE':t('ISTANBUL EXCHANGE / ','ISTANBUL EXCHANGE / ')+esc(local?t('LOCAL TABLE','YEREL OYUN'):session?.roomCode||'')}</div><h2 class="turn-title">${esc(title)}</h2>${dice?diceHtml():`<div class="center-rule"></div>`}<p class="turn-detail">${esc(detail)}</p>${state.lastCard&&state.phase!=='finished'?`<p class="card-reveal"><span class="eyebrow">${state.lastCard.type==='chance'?t('Opportunity','Fırsat'):t('City Fund','Şehir Fonu')} · ${esc(name(state.lastCard.playerId))}</span>${esc(state.lastCard.text)}</p>`:''}<div class="setup-form">${controls}</div>${state.phase!=='finished'?`<p class="center-balance">${esc(who?.name || p.name)} · ${cash(who?.cash ?? p.cash)}</p>`:''}${local?`<p class="fine-print">${t('Pass this device to the player whose turn it is.','Cihazı sırası gelen oyuncuya ver.')}</p>`:''}</div>`;
   }
   $('board-center').innerHTML=html;
   $('board-center').classList.toggle('rolling',animationBusy&&state?.lastAction?.type==='ROLL');
@@ -150,7 +152,7 @@ function renderRoom() {
   const roster=session?.players||[];
   $('players-panel').innerHTML=panel(t('Players','Oyuncular'),state.players.map(p=>{
     const connected=local||roster.find(r=>r.id===p.id)?.connected!==false;
-    return `<div data-player-row="${esc(p.id)}" class="player-row ${game()&&activeId()===p.id?'active':''} ${p.bankrupt?'out':''}">${token(p)}<div><div class="player-name">${esc(p.name)}${!local&&p.id===session.playerId?' · '+t('you','sen'):''}</div><div class="player-meta">${p.bankrupt?t('BANKRUPT','İFLAS'):!connected?t('RECONNECTING','YENİDEN BAĞLANIYOR'):game()?(p.inJail?t('IN JAIL','HAPİSTE'):esc(BOARD[p.position]?.name)):tokenLabel(p.token)}</div></div><span class="player-cash">${game()?cash(p.cash):'✓'}</span>${!game()&&session?.isHost&&!connected?button(t('Remove','Çıkar'),'kick','small',false,`data-player="${esc(p.id)}"`):''}</div>`;
+    return `<div data-player-row="${esc(p.id)}" class="player-row ${game()&&activeId()===p.id?'active':''} ${p.bankrupt?'out':''}">${token(p)}<div><div class="player-name">${esc(p.name)}${!local&&p.id===session.playerId?' · '+t('you','sen'):''}</div><div class="player-meta">${p.bankrupt?t('BANKRUPT','İFLAS'):!connected?t('RECONNECTING','YENİDEN BAĞLANIYOR'):game()?(p.inJail?t('ON A DETOUR','SAPAKTA'):esc(spaceLabel(BOARD[p.position]))+' · '+t('worth','değer')+' '+cash(assetValue(state,p.id))):tokenLabel(p.token)}</div></div><span class="player-cash">${game()?cash(p.cash):'✓'}</span>${!game()&&session?.isHost&&!connected?button(t('Remove','Çıkar'),'kick','small',false,`data-player="${esc(p.id)}"`):''}</div>`;
   }).join(''),`<span class="small-muted">${state.players.filter(p=>!p.bankrupt).length}/6</span>`);
 }
 function renderProperty() {
@@ -182,9 +184,9 @@ function renderProperty() {
   } else {
     const info={
       go:t(`Collect ${cash(r.salary)} when passing START. Landing exactly here pays ${cash(r.salary*(r.doubleSalaryOnGo?2:1))}, including START cards.`,`Başlangıç’tan geçerken ${cash(r.salary)} al. Tam buraya gelince ${cash(r.salary*(r.doubleSalaryOnGo?2:1))} alırsın; Başlangıç’a götüren kartlar da buna dahildir.`),
-      jail:t('Just visiting? Nothing to pay.','Ziyaretçiysen ödeme yok.')+' '+(r.bail===0?t('In jail, you may leave for free before rolling.','Hapisteysen zar atmadan ücretsiz çıkabilirsin.'):t(`In jail, roll doubles, use a release card, or pay ${cash(r.bail)} before rolling.`,`Hapisteysen çift zar at, çıkış kartı kullan veya zar atmadan ${cash(r.bail)} öde.`)),
+      jail:t('Just visiting? Nothing to pay.','Ziyaretçiysen ödeme yok.')+' '+(r.bail===0?t('On a detour, you may leave for free before rolling.','Sapak’taysan zar atmadan ücretsiz çıkabilirsin.'):t(`On a detour, roll doubles, use a release card, or pay ${cash(r.bail)} before rolling.`,`Sapak’taysan çift zar at, çıkış kartı kullan veya zar atmadan ${cash(r.bail)} öde.`)),
       parking:r.freeParkingPot?t(`Collect the Tea Break pot: ${cash(state?.freeParkingPot||0)}. Paid board taxes fill the pot; it resets after collection.`,`Çay Molası kasasını al: ${cash(state?.freeParkingPot||0)}. Ödenen tahta vergileri kasayı doldurur; alındığında kasa sıfırlanır.`):t('Take a breather. No fees, no jackpot.','Bir nefes al. Ücret veya ödül yok.'),
-      goToJail:t('Go directly to jail. The move from this square to jail pays no START salary.','Doğrudan hapse git. Bu kareden hapse giderken Başlangıç geliri alınmaz.'),
+      goToJail:t('Go directly to Detour. This move pays no START salary.','Doğrudan Sapak’a git. Bu hamlede Başlangıç geliri alınmaz.'),
       chance:t('Draw a city event. Your fortune may turn.','Bir şehir olayı çek. Talihin değişebilir.'),
       community:t('A little news from the neighborhood.','Mahalleden küçük bir haber.'),
       tax:r.freeParkingPot?t(`Pay ${cash(square.amount)} into the Tea Break pot. If you owe a debt, the tax enters the pot only when paid.`,`Çay Molası kasasına ${cash(square.amount)} öde. Borç oluşursa vergi yalnızca ödendiğinde kasaya eklenir.`):t(`Pay ${cash(square.amount)} to the bank.`,`Bankaya ${cash(square.amount)} öde.`),
@@ -221,13 +223,13 @@ function renderExtras(){
 async function ensureScene(){
   if(scene||sceneFailed)return;
   if(!scenePromise)scenePromise=(async()=>{
-    try{const {BoardScene}=await import('./scene.js?v=20261006-4');scene=new BoardScene($('scene-view'),{onSelect(index){selected=index;renderBoard();renderProperty();updateScene(false);},onError(){fallbackScene();},onReady(){ $('scene-loading').hidden=true; }});$('scene-loading').hidden=true;updateScene(false);}
+    try{await document.fonts?.ready;const {BoardScene}=await import('./scene.js?v=20261111-4');scene=new BoardScene($('scene-view'),{onSelect(index){selected=index;renderBoard();renderProperty();updateScene(false);},onError(){fallbackScene();},onReady(){ $('scene-loading').hidden=true; }});$('scene-loading').hidden=true;updateScene(false);}
     catch(error){console.warn('3D view unavailable',error);fallbackScene();}
   })();
   return scenePromise;
 }
 function fallbackScene(){sceneFailed=true;view='2d';$('scene-loading').hidden=true;applyView();notice(t('3D is unavailable in this browser. The 2D board is ready to play.','Bu tarayıcıda 3D kullanılamıyor. 2D tahta oynamaya hazır.'));}
-function updateScene(animate=true){if(view==='3d'&&scene)scene.update(state,{selected,theme:theme==='system'?(systemTheme.matches?'dark':'light'):theme,palette,reducedMotion:motionOff(),animate});}
+function updateScene(animate=true){if(view==='3d'&&scene)scene.update(state,{selected,viewer:local?null:session?.playerId,theme:theme==='system'?(systemTheme.matches?'dark':'light'):theme,palette,reducedMotion:motionOff(),animate});}
 function applyView(){
   const is3d=view==='3d';document.body.dataset.view=view;$('board').hidden=is3d;$('scene-view').hidden=!is3d;$('scene-loading').hidden=!is3d||!!scene||sceneFailed;
   (is3d?$('play-panel'):$('board')).append($('board-center'));effects.stop();renderExtras();
@@ -235,10 +237,11 @@ function applyView(){
 }
 function installState(nextState){
   const previous=state;state=nextState;
+  if(local){if(state.phase==='finished')forget(LOCAL_SAVE);else save(LOCAL_SAVE,JSON.stringify(state));}
   if($('modal').open&&$('rules-form')&&state?.kind==='lobby'&&!session?.isHost)showHouseRules();
   if(game()&&state.lastAction&&state.revision!==previous?.revision){
     if(['ROLL','BUY','AUCTION'].includes(state.lastAction.type))selected=state.pending?.property??state.auction?.property??state.players.find(p=>p.id===state.lastAction.playerId)?.position??selected;
-    const duration=motionOff()?0:(state.lastAction.type==='ROLL'?650:0)+(state.lastMove?.path.length||0)*70;
+    const duration=motionOff()?0:(state.lastAction.type==='ROLL'?DICE_MS[view]:0)+(state.lastMove?.path.length||0)*STEP_MS[view];
     clearTimeout(motionTimer);animationBusy=duration>0;
     if(duration)motionTimer=setTimeout(()=>{animationBusy=false;renderCenter();renderProperty();},duration+50);
   }
@@ -281,7 +284,7 @@ async function copyInvite(){
   try{await navigator.clipboard.writeText(url);notice(t('Invite link copied. Send it to your friends.','Davet bağlantısı kopyalandı. Arkadaşlarına gönder.'));}
   catch{openModal(t('Invite friends','Arkadaşlarını davet et'),`<label class="field">${t('Copy this link','Bu bağlantıyı kopyala')}<input readonly value="${esc(url)}"></label>`);}
 }
-function leave(){session?.leave();session=null;state=null;local=false;busy=false;animationBusy=false;clearTimeout(motionTimer);effects.stop();screen='home';history.replaceState(null,'',location.pathname);$('modal').close();render();}
+function leave(){if(local)forget(LOCAL_SAVE);session?.leave();session=null;state=null;local=false;busy=false;animationBusy=false;clearTimeout(motionTimer);effects.stop();screen='home';history.replaceState(null,'',location.pathname);$('modal').close();render();}
 function showTrade(){
   const p=me(),others=state.players.filter(x=>!x.bankrupt&&x.id!==p.id);
   openModal(t('Propose a trade','Takas öner'),`<form id="trade-form"><label class="field">${t('Trade with','Takas yapılacak oyuncu')}<select id="trade-target">${others.map(o=>`<option value="${esc(o.id)}">${esc(o.name)}</option>`).join('')}</select></label><div class="trade-columns"><div><h3>${t('You give','Vereceğin')}</h3><label class="field">${t('Cash','Para')}<input id="give-cash" type="number" min="0" max="${p.cash}" value="0" required></label><div id="give-deeds">${tradeChecks(p.id,'give')}</div></div><div><h3>${t('You receive','Alacağın')}</h3><label class="field">${t('Cash','Para')}<input id="receive-cash" type="number" min="0" value="0" required></label><div id="receive-deeds">${tradeChecks(others[0].id,'receive')}</div></div></div><p class="small-muted">${t('The other player must approve your offer. Sell all buildings in a color set before trading its deeds.','Diğer oyuncu teklifini onaylamalı. Bir gruptaki tapuyu takas etmeden önce grubun tüm binalarını sat.')}</p><button class="button primary wide">${t('Send offer →','Teklifi gönder →')}</button></form>`);
@@ -299,7 +302,7 @@ function rulesSummary(r=activeRules()){
   return `<div class="rules-summary">${[
     [t('Starting cash','Başlangıç parası'),cash(r.startingCash)],
     [t('Salary / lap','Tur başına gelir'),cash(r.salary)],
-    [t('Jail bail','Kefalet'),cash(r.bail)],
+    [t('Detour fee','Sapak ücreti'),cash(r.bail)],
     [t('Rent multiplier','Kira çarpanı'),r.rentMultiplier+'×'],
     [t('Auctions','Açık artırma'),r.auctions?t('On','Açık'):t('Off','Kapalı')],
     [t('Tea Break tax pot','Çay Molası vergi kasası'),r.freeParkingPot?t('On','Açık'):t('Off','Kapalı')],
@@ -311,13 +314,13 @@ function showHouseRules(){
   const r=activeRules(),editable=!state||(state.kind==='lobby'&&session?.isHost);
   const select=(key,label,values,format=cash)=>`<label class="field">${label}<select name="${key}" ${editable?'':'disabled'}>${values.map(v=>`<option value="${v}" ${r[key]===v?'selected':''}>${format(v)}</option>`).join('')}</select></label>`;
   const check=(key,label,description)=>`<label class="rule-check"><input type="checkbox" name="${key}" ${r[key]?'checked':''} ${editable?'':'disabled'}><span><strong>${label}</strong><small>${description}</small></span></label>`;
-  openModal(t('House rules','Ev kuralları'),`<p class="modal-intro">${editable?t('Set the rules before the first roll. Everyone in the room plays by the same rules.','İlk zardan önce kuralları belirle. Odadaki herkes aynı kurallarla oynar.'):t('These rules are locked for this game.','Bu oyun için kurallar sabittir.')}</p><form id="rules-form"><div class="preset-grid">${Object.entries({classic:[t('Classic','Klasik'),t('The familiar balance.','Alışıldık denge.')],quick:[t('Fast fortunes','Hızlı servet'),t('Less cash, higher rent.','Az para, yüksek kira.')],generous:[t('Generous city','Cömert şehir'),t('Bigger starts and bonuses.','Bol para ve ödüller.')]}).map(([key,[label,description]])=>`<button type="button" data-preset="${key}" class="preset-card" ${editable?'':'disabled'}><strong>${label}</strong><small>${description}</small></button>`).join('')}</div><div class="rules-fields">${select('startingCash',t('Starting cash','Başlangıç parası'),[500,1000,1500,2000,2500,3000,5000])}${select('salary',t('Salary when passing START','Başlangıç’tan geçiş geliri'),[0,100,200,300,400,500])}${select('bail',t('Jail bail','Kefalet'),[0,25,50,100,200])}${select('rentMultiplier',t('Rent multiplier','Kira çarpanı'),[.5,1,1.5,2],v=>v+'×')}</div>${check('auctions',t('Auction declined properties','Reddedilen mülkü artırmaya çıkar'),t('Switch off to leave them with the bank.','Kapalıysa mülk bankada kalır.'))}${check('freeParkingPot',t('Tea Break tax pot','Çay Molası vergi kasası'),t('Paid city taxes go into a pot. Landing on Tea Break collects it.','Ödenen şehir vergileri kasaya gider. Çay Molası’na gelen kasayı alır.'))}${check('doubleSalaryOnGo',t('Double salary on START','Başlangıç’ta çift gelir'),t('Landing exactly on START doubles that salary payment.','Tam Başlangıç’a gelince o geçişteki gelir ikiye katlanır.'))}${check('evenBuilding',t('Build evenly across a color set','Renk grubunda eşit inşa et'),t('Switch off to develop one district ahead of its neighbors.','Kapalıysa bir semtte diğerlerinden önce gelişebilirsin.'))}<p class="small-muted">${t('The bank always has 32 houses and 12 hotels. All money is fictional.','Bankada her zaman 32 ev ve 12 otel bulunur. Para hayalidir.')}</p>${editable?`<button type="submit" class="button primary wide">${t('Save house rules','Ev kurallarını kaydet')}</button>`:''}</form>`);
+  openModal(t('House rules','Ev kuralları'),`<p class="modal-intro">${editable?t('Set the rules before the first roll. Everyone in the room plays by the same rules.','İlk zardan önce kuralları belirle. Odadaki herkes aynı kurallarla oynar.'):t('These rules are locked for this game.','Bu oyun için kurallar sabittir.')}</p><form id="rules-form"><div class="preset-grid">${Object.entries({classic:[t('Classic','Klasik'),t('The familiar balance.','Alışıldık denge.')],quick:[t('Fast fortunes','Hızlı servet'),t('Less cash, higher rent.','Az para, yüksek kira.')],generous:[t('Generous city','Cömert şehir'),t('Bigger starts and bonuses.','Bol para ve ödüller.')]}).map(([key,[label,description]])=>`<button type="button" data-preset="${key}" class="preset-card" ${editable?'':'disabled'}><strong>${label}</strong><small>${description}</small></button>`).join('')}</div><div class="rules-fields">${select('startingCash',t('Starting cash','Başlangıç parası'),[500,1000,1500,2000,2500,3000,5000])}${select('salary',t('Salary when passing START','Başlangıç’tan geçiş geliri'),[0,100,200,300,400,500])}${select('bail',t('Detour fee','Sapak ücreti'),[0,25,50,100,200])}${select('rentMultiplier',t('Rent multiplier','Kira çarpanı'),[.5,1,1.5,2],v=>v+'×')}</div>${check('auctions',t('Auction declined properties','Reddedilen mülkü artırmaya çıkar'),t('Switch off to leave them with the bank.','Kapalıysa mülk bankada kalır.'))}${check('freeParkingPot',t('Tea Break tax pot','Çay Molası vergi kasası'),t('Paid city taxes go into a pot. Landing on Tea Break collects it.','Ödenen şehir vergileri kasaya gider. Çay Molası’na gelen kasayı alır.'))}${check('doubleSalaryOnGo',t('Double salary on START','Başlangıç’ta çift gelir'),t('Landing exactly on START doubles that salary payment.','Tam Başlangıç’a gelince o geçişteki gelir ikiye katlanır.'))}${check('evenBuilding',t('Build evenly across a color set','Renk grubunda eşit inşa et'),t('Switch off to develop one district ahead of its neighbors.','Kapalıysa bir semtte diğerlerinden önce gelişebilirsin.'))}<p class="small-muted">${t('The bank always has 32 houses and 12 hotels. All money is fictional.','Bankada her zaman 32 ev ve 12 otel bulunur. Para hayalidir.')}</p>${editable?`<button type="submit" class="button primary wide">${t('Save house rules','Ev kurallarını kaydet')}</button>`:''}</form>`);
 }
 function fillRulesForm(value){for(const [key,v]of Object.entries(value)){const el=$('rules-form').elements.namedItem(key);if(el.type==='checkbox')el.checked=v;else el.value=String(v);}}
 function showCustomization(index=null){
   profileTarget=index;
   const p=index!==null?localProfiles[index]:(state?.kind==='lobby'?session.players.find(x=>x.id===session.playerId):profile)||profile;
-  openModal(t('Make your move','Taşını seç'),`<p class="modal-intro">${t('Choose a piece and a color. This is how your friends will see you at the table.','Bir taş ve renk seç. Arkadaşların masada seni böyle görecek.')}</p><form id="profile-form"><div class="pawn-picker">${TOKEN_OPTIONS.map(o=>`<label class="pawn-option"><input type="radio" name="pawn" value="${o.id}" ${p.token===o.id?'checked':''}><span>${pawnIcon(o.id)}<strong>${lang==='tr'?o.labelTr:o.label}</strong></span></label>`).join('')}</div><fieldset class="color-picker"><legend>${t('Your color','Rengin')}</legend>${colors.map((c,i)=>`<label class="color-option" style="--choice:${c}"><input type="radio" name="color" value="${c}" ${p.color===c?'checked':''} aria-label="${t('Color','Renk')} ${i+1}"><span></span></label>`).join('')}</fieldset><div class="customization-preview" style="color:${p.color}">${pawnIcon(p.token)}<span>${t('Your next fortune starts here.','Bir sonraki servetin burada başlar.')}</span></div><button class="button primary wide" type="submit">${t('Use this piece','Bu taşı kullan')}</button></form>`);
+  openModal(t('Make your move','Taşını seç'),`<p class="modal-intro">${t('Choose a piece, a color and a look. This is how your friends will see you at the table.','Bir taş, renk ve görünüm seç. Arkadaşların masada seni böyle görecek.')}</p><form id="profile-form"><div class="pawn-picker">${TOKEN_OPTIONS.map(o=>`<label class="pawn-option"><input type="radio" name="pawn" value="${o.id}" ${p.token===o.id?'checked':''}><span>${pawnIcon(o.id)}<strong>${lang==='tr'?o.labelTr:o.label}</strong></span></label>`).join('')}</div><fieldset class="color-picker"><legend>${t('Your color','Rengin')}</legend>${colors.map((c,i)=>`<label class="color-option" style="--choice:${c}"><input type="radio" name="color" value="${c}" ${p.color===c?'checked':''} aria-label="${t('Color','Renk')} ${i+1}"><span></span></label>`).join('')}</fieldset><label class="field">${t('Hairstyle','Saç modeli')}<select name="hair">${HAIR_STYLES.map(h=>`<option value="${h}" ${p.hair===h?'selected':''}>${({short:t('Short','Kısa'),long:t('Long','Uzun'),bun:t('Bun','Topuz'),curly:t('Curly','Kıvırcık'),bald:t('Bald','Kel')})[h]}</option>`).join('')}</select></label>${[['hairColor',t('Hair color','Saç rengi'),HAIR_COLORS],['skin',t('Skin tone','Ten rengi'),SKIN_TONES]].map(([key,label,list])=>`<fieldset class="color-picker look-picker"><legend>${label}</legend>${list.map((c,i)=>`<label class="color-option" style="--choice:${c}"><input type="radio" name="${key}" value="${c}" ${p[key]===c?'checked':''} aria-label="${label} ${i+1}"><span></span></label>`).join('')}</fieldset>`).join('')}<div class="customization-preview" style="color:${p.color}">${pawnIcon(p.token)}<span>${t('Your next fortune starts here.','Bir sonraki servetin burada başlar.')}</span></div><button class="button primary wide" type="submit">${t('Use this piece','Bu taşı kullan')}</button></form>`);
 }
 function showAppearance(){
   openModal(t('Your table','Senin masan'),`<p class="modal-intro">${t('These choices change your view only. Your friends keep theirs.','Bu seçimler yalnızca senin görünümünü değiştirir.')}</p><form id="appearance-form"><label class="field">${t('Tabletop palette','Masa paleti')}<select name="palette"><option value="stone" ${palette==='stone'?'selected':''}>${t('Carved stone','Oyma taş')}</option><option value="bosphorus" ${palette==='bosphorus'?'selected':''}>${t('Bosphorus blue','Boğaz mavisi')}</option><option value="terracotta" ${palette==='terracotta'?'selected':''}>${t('Terracotta','Toprak')}</option></select></label><label class="rule-check"><input type="checkbox" name="sound" ${sound?'checked':''}><span><strong>${t('Table sounds','Masa sesleri')}</strong><small>${t('Soft dice, purchase, and building sounds.','Hafif zar, satın alma ve inşa sesleri.')}</small></span></label><label class="rule-check"><input type="checkbox" name="reduced" ${reduceMotion?'checked':''}><span><strong>${t('Reduce motion','Hareketi azalt')}</strong><small>${t('Skip dice and piece animations. Your system preference is also respected.','Zar ve taş animasyonlarını atla. Sistem tercihin de dikkate alınır.')}</small></span></label><button type="submit" class="button primary wide">${t('Save preferences','Tercihleri kaydet')}</button></form>`);
@@ -335,6 +338,7 @@ document.addEventListener('click',async e=>{
   const pref=e.target.closest('[data-theme],[data-lang]');if(pref){if(pref.dataset.theme){theme=pref.dataset.theme;save('omt-theme',theme);}else{lang=pref.dataset.lang;save('omt-lang',lang);}render();return;}
   const space=e.target.closest('[data-space],[data-inspect]');if(space){selected=Number(space.dataset.space??space.dataset.inspect);renderBoard();renderProperty();updateScene(false);return;}
   const b=e.target.closest('[data-action]');if(!b||b.disabled)return;e.preventDefault();const a=b.dataset.action;
+  if(a==='resume'){try{const saved=JSON.parse(read(LOCAL_SAVE,'null'));if(saved?.version!==1||!Array.isArray(saved.players)||!saved.players[saved.turn])throw 0;local=true;session=null;installState(saved);}catch{forget(LOCAL_SAVE);local=false;state=null;render();notice(t('That saved game could not be opened.','Kayıtlı oyun açılamadı.'));}return;}
   if(a==='cancel-connect'){const pending=session;session=null;pending?.leave(false);state=null;busy=false;render();return;}
   if(['home','join','local'].includes(a)){if(busy)return;screen=a;renderCenter();return;}
   if(animationBusy&&['review-trade','sell-group-confirm','bankrupt-confirm','trade'].includes(a))return;
@@ -354,7 +358,7 @@ document.addEventListener('click',async e=>{
 document.addEventListener('submit',async e=>{
   e.preventDefault();
   if(e.target.id==='rules-form'){try{const form=e.target,value=Object.fromEntries(Object.keys(DEFAULT_RULES).map(k=>{const el=form.elements.namedItem(k);return[k,el.type==='checkbox'?el.checked:Number(el.value)];}));const normalized=normalizeRules(value);if(state?.kind==='lobby')await session.setRules(normalized);else pendingRules=normalized;$('modal').close();render();notice(t('House rules saved.','Ev kuralları kaydedildi.'));}catch(err){notice(err.message);}return;}
-  if(e.target.id==='profile-form'){try{const form=e.target,value=sanitizeProfile({token:form.elements.namedItem('pawn').value,color:form.elements.namedItem('color').value});if(profileTarget!==null)localProfiles[profileTarget]=value;else{profile=value;save('omt-pawn',profile.token);save('omt-pawn-color',profile.color);if(state?.kind==='lobby')await session.updateProfile({token:value.token,color:value.color});}$('modal').close();render();}catch(err){notice(err.message);}return;}
+  if(e.target.id==='profile-form'){try{const form=e.target,field=key=>form.elements.namedItem(key).value,{name:_,...value}=sanitizeProfile({token:field('pawn'),color:field('color'),hair:field('hair'),hairColor:field('hairColor'),skin:field('skin')});if(profileTarget!==null)localProfiles[profileTarget]=value;else{profile=value;save('omt-pawn',profile.token);save('omt-pawn-color',profile.color);save('omt-hair',profile.hair);save('omt-hair-color',profile.hairColor);save('omt-skin',profile.skin);if(state?.kind==='lobby')await session.updateProfile(value);}$('modal').close();render();}catch(err){notice(err.message);}return;}
   if(e.target.id==='appearance-form'){palette=e.target.elements.namedItem('palette').value;sound=e.target.elements.namedItem('sound').checked;reduceMotion=e.target.elements.namedItem('reduced').checked;save('omt-board-palette',palette);save('omt-game-sound',sound?'on':'off');save('omt-game-motion',reduceMotion?'reduced':'system');effects.configure({sound,reducedMotion:motionOff()});effects.unlock();effects.play('BUILD');if(motionOff()){clearTimeout(motionTimer);animationBusy=false;effects.stop();}$('modal').close();render();return;}
   if(e.target.id==='online-form'){await connect();}
   if(e.target.id==='local-form'){local=true;session=null;installState(createGame(Array.from({length:localCount},(_,i)=>({...localProfiles[i],id:`local-${i}`,name:localNames[i].trim()||t(`Player ${i+1}`,`Oyuncu ${i+1}`)})),pendingRules));}
@@ -366,7 +370,7 @@ document.addEventListener('change',e=>{if(e.target.id==='local-count'){localCoun
 $('rules-button').addEventListener('click',()=>openModal(t('How to play','Nasıl oynanır'),rules()));
 $('close-modal').addEventListener('click',()=>$('modal').close());
 $('modal').addEventListener('click',e=>{if(e.target===$('modal')){const r=$('modal').getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)$('modal').close();}});
-window.addEventListener('beforeunload',e=>{if(game()&&state.phase!=='finished'){e.preventDefault();e.returnValue='';}});
+window.addEventListener('beforeunload',e=>{if(game()&&!local&&state.phase!=='finished'){e.preventDefault();e.returnValue='';}});
 systemTheme.addEventListener('change',()=>updateScene(false));systemMotion.addEventListener('change',()=>{effects.configure({reducedMotion:motionOff()});render();});
 if(!['3d','2d'].includes(view))view='3d';if(!['stone','bosphorus','terracotta'].includes(palette))palette='stone';
 if(draftCode)screen='join';buildBoard();render();applyView();

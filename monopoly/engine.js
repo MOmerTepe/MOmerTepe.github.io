@@ -1,6 +1,6 @@
-import { BOARD, GROUPS, OWNABLE_TYPES } from './board.js?v=20261006-4';
-import { DEFAULT_RULES, normalizeRules } from './rules.js?v=20261006-4';
-import { PLAYER_COLORS, TOKEN_OPTIONS, sanitizeProfile } from './cosmetics.js?v=20261006-4';
+import { BOARD, GROUPS, OWNABLE_TYPES } from './board.js?v=20261111-4';
+import { DEFAULT_RULES, normalizeRules } from './rules.js?v=20261111-4';
+import { PLAYER_COLORS, TOKEN_OPTIONS, sanitizeProfile } from './cosmetics.js?v=20261111-4';
 
 const check = (condition,message) => { if (!condition) throw new Error(message); };
 const byId = (state,id) => state.players.find(player => player.id === id);
@@ -355,7 +355,12 @@ export function applyAction(previous,actorId,action,rng=Math.random) {
           player.jailTurns++;
           state.phase = 'end';
           if (player.jailTurns >= 3) {
-            if (charge(state,player,state.settings.bail,null,'third detour turn','end',{release:true,move:steps})) {
+            // A held pass is spent before any bail is charged.
+            if (player.jailCards > 0) {
+              player.jailCards--; player.inJail = false; player.jailTurns = 0;
+              log(state,`${player.name} used a free detour pass.`);
+              move(state,player,steps,rng);
+            } else if (charge(state,player,state.settings.bail,null,'third detour turn','end',{release:true,move:steps})) {
               player.inJail = false; player.jailTurns = 0; move(state,player,steps,rng);
             }
           } else log(state,`${player.name} stays on the detour (${player.jailTurns}/3 attempts).`);

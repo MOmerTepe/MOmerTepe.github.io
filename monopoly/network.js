@@ -1,7 +1,7 @@
-import { createGame, applyAction } from './engine.js?v=20261006-4';
-import { DEFAULT_RULES, normalizeRules } from './rules.js?v=20261006-4';
-import { PLAYER_COLORS, sanitizeProfile } from './cosmetics.js?v=20261006-4';
-import { getIceConfig } from './ice-config.js?v=20261006-5';
+import { createGame, applyAction } from './engine.js?v=20261111-4';
+import { DEFAULT_RULES, normalizeRules } from './rules.js?v=20261111-4';
+import { PLAYER_COLORS, sanitizeProfile } from './cosmetics.js?v=20261111-4';
+import { getIceConfig } from './ice-config.js?v=20261111-4';
 
 // The page stays entirely static. PeerJS supplies signaling and WebRTC transport;
 // the room creator's browser is the only authority allowed to change game state.
@@ -134,7 +134,7 @@ export class RoomSession {
     this._lastConnectError = '';
   }
 
-  get players() { return [...this._roster.values()].map(({ id, name, token, color, connected }) => ({ id, name, token, color, connected })); }
+  get players() { return [...this._roster.values()].map(({ id, name, token, color, hair, hairColor, skin, connected }) => ({ id, name, token, color, hair, hairColor, skin, connected })); }
   get connectedPlayerIds() { return this.players.filter(p => p.connected).map(p => p.id); }
   get shareUrl() {
     const url = new URL(location.href);

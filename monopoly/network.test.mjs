@@ -245,7 +245,7 @@ test('profiles sanitize to the fixed choices, propagate, and remain bound to the
   assert.equal(host.value.players[1].color, PLAYER_COLORS[3]);
   await assert.rejects(guest.value._request('profile', { profile: [] }), /valid player profile/);
   assert.deepEqual(guest.value.state, host.value.state);
-  assert.deepEqual(Object.keys(sanitizeProfile({ id: 'spoof', cash: 9999 })), ['name', 'token', 'color']);
+  assert.deepEqual(Object.keys(sanitizeProfile({ id: 'spoof', cash: 9999 })), ['name', 'token', 'color', 'hair', 'hairColor', 'skin']);
 });
 
 test('rejoining preserves chosen appearance and current rules, and profiles freeze for the game', async t => {

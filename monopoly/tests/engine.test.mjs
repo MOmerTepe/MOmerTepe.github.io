@@ -613,3 +613,12 @@ test('old default game snapshots gain new settings and animation fields on their
   assert.equal(state.freeParkingPot,0);
   assert.equal(state.lastMove.id,1);
 });
+
+test('a held detour pass is spent instead of bail on the third failed roll',() => {
+  const before=game(); Object.assign(before.players[0],{inJail:true,position:10,jailCards:1,jailTurns:2});
+  const state=act(before,'ROLL',{},'p0',dice(1,2));
+  assert.equal(state.players[0].jailCards,0);
+  assert.equal(state.players[0].cash,1500);
+  assert.equal(state.players[0].inJail,false);
+  assert.equal(state.players[0].position,13);
+});

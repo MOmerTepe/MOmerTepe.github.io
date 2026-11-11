@@ -57,4 +57,8 @@ export const BOARD = Object.freeze([
   street('Bosphorus Palace','landmarks',400,[50,200,600,1400,1700,2000],200),
 ].map((space,index) => Object.freeze({...space,index})));
 
+// One glyph and one short name per space, shared by the 2D board and the 3D tiles.
+export const SPACE_ICONS = Object.freeze({go:'↗',jail:'Ⅱ',parking:'☕\uFE0E',goToJail:'→',chance:'?',community:'◇',tax:'−',railroad:'↔',utility:'⌁'});
+export const spaceLabel = square => square.type === 'jail' ? 'Detour' : square.name;
+
 export const OWNABLE_TYPES = ['property','railroad','utility'];

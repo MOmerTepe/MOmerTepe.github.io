@@ -12,6 +12,12 @@ export const PLAYER_COLORS = Object.freeze([
   '#576f9d', '#9b5980', '#42534b', '#a56c32',
 ]);
 
+// How a player's seated character looks.
+export const HAIR_STYLES = Object.freeze(['short', 'long', 'bun', 'curly', 'bald']);
+export const HAIR_COLORS = Object.freeze(['#26241f', '#5a3a22', '#b8894d', '#a8482b', '#9a9a94', '#ece9df']);
+export const SKIN_TONES = Object.freeze(['#f1d3b8', '#dfb38f', '#b9835a', '#7c5236']);
+const pick = (list, value, base) => list.includes(value) ? value : list.includes(base) ? base : list[0];
+
 const object = value => value && typeof value === 'object' && !Array.isArray(value) ? value : {};
 const cleanName = value => typeof value === 'string' ? value.replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 24) : '';
 const validToken = value => TOKEN_OPTIONS.some(token => token.id === value);
@@ -25,5 +31,6 @@ export function sanitizeProfile(profile = {}, fallback = {}) {
     name: cleanName(value.name) || cleanName(base.name) || 'Player',
     token: validToken(value.token) ? value.token : validToken(base.token) ? base.token : TOKEN_OPTIONS[0].id,
     color: validColor(value.color) ? value.color.toLowerCase() : validColor(base.color) ? base.color.toLowerCase() : PLAYER_COLORS[0],
+    hair: pick(HAIR_STYLES, value.hair, base.hair), hairColor: pick(HAIR_COLORS, value.hairColor, base.hairColor), skin: pick(SKIN_TONES, value.skin, base.skin),
   };
 }

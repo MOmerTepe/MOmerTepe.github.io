@@ -10,6 +10,10 @@ const paths = {
   hotel: '<path d="M6 29V4h20v25M3 29h26M13 29v-7h6v7M11 9h2m6 0h2M11 15h2m6 0h2"/>',
   dice: '<rect x="5" y="5" width="22" height="22" rx="4"/><circle cx="11" cy="11" r="1"/><circle cx="21" cy="21" r="1"/><circle cx="16" cy="16" r="1"/>',
 };
+// How long the dice take before a piece starts moving, per board view.
+export const DICE_MS = Object.freeze({ '2d': 650, '3d': 1700 });
+// How long a piece takes to hop one space.
+export const STEP_MS = Object.freeze({ '2d': 160, '3d': 300 });
 export function pawnIcon(id='ferry',className='pawn-icon') {
   return `<svg class="${className}" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[id]||paths.ferry}</svg>`;
 }
@@ -42,7 +46,7 @@ export class GameEffects {
       const el=document.createElement('span');el.className='moving-pawn';el.dataset.player=p.id;el.innerHTML=tokenMarkup(p);board.append(el);
       const destination=board.querySelector(`.token[data-player="${CSS.escape(p.id)}"]`);destination?.classList.add('token-travelling');
       const frames=[move.from,...move.path].map(i=>{const cell=board.querySelector(`[data-space="${i}"]`).getBoundingClientRect();return{transform:`translate(${cell.x-rect.x+cell.width/2-13}px,${cell.y-rect.y+cell.height/2-13}px)`};});
-      const a=el.animate(frames,{duration:Math.max(150,move.path.length*70),delay:next.lastAction?.type==='ROLL'?650:0,fill:'both'});a.onfinish=()=>{el.remove();board.querySelectorAll(`.token[data-player="${CSS.escape(p.id)}"]`).forEach(t=>t.classList.remove('token-travelling'));};this.running.push(a);
+      const a=el.animate(frames,{duration:Math.max(150,move.path.length*STEP_MS['2d']),delay:next.lastAction?.type==='ROLL'?650:0,fill:'both'});a.onfinish=()=>{el.remove();board.querySelectorAll(`.token[data-player="${CSS.escape(p.id)}"]`).forEach(t=>t.classList.remove('token-travelling'));};this.running.push(a);
     }
     if(next.phase==='finished'&&previous.phase!=='finished'){
       const host=document.querySelector('#celebration');for(let i=0;i<38;i++){const el=document.createElement('i');el.className='confetti-piece';el.style.background=['#a75542','#447b76','#d6b866','#7d6aa0'][i%4];el.style.left=`${(i*37)%100}%`;host.append(el);const a=el.animate([{transform:`translateY(-20px) rotate(${i*13}deg)`,opacity:1},{transform:`translateY(500px) rotate(${i*61}deg)`,opacity:0}],{duration:1600+(i%7)*110,delay:(i%9)*70});a.onfinish=()=>el.remove();this.running.push(a);}
